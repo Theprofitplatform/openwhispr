@@ -44,6 +44,7 @@ const { importYoutubeAudio } = require("./youtubeImport");
 const { createSeoYoutubeRadarStore } = require("./seoYoutubeRadar/store");
 const { createYouTubeClient } = require("./seoYoutubeRadar/youtubeClient");
 const { runSeoYoutubeRadar } = require("./seoYoutubeRadar/runner");
+const { createSeoYoutubeRadarScheduler } = require("./seoYoutubeRadar/scheduler");
 
 const STREAMING_CLIENT_BY_PROVIDER = {
   "openai-realtime": OpenAIRealtimeStreaming,
@@ -352,6 +353,14 @@ class IPCHandlers {
     this.seoRadarStore = createSeoYoutubeRadarStore({
       filePath: path.join(app.getPath("userData"), "seo-youtube-radar.json"),
     });
+    this.seoRadarScheduler = createSeoYoutubeRadarScheduler({
+      store: this.seoRadarStore,
+      runNow: () => this._runSeoYoutubeRadar(),
+      onError: (error) =>
+        debugLogger.error("Scheduled SEO YouTube Radar run failed", {
+          error: error.message,
+        }),
+    });
     this._audioCleanupInterval = null;
     this._noteFilesEnabled = false;
     this.speakerDiarizationEnabled = true;
@@ -367,6 +376,10 @@ class IPCHandlers {
     this._setupAudioCleanup();
     this._logDetectedGpus();
     this.setupHandlers();
+    this.seoRadarScheduler.start();
+    app.on("before-quit", () => {
+      this.seoRadarScheduler.stop();
+    });
 
     if (this.whisperManager?.serverManager) {
       this.whisperManager.serverManager.on("cuda-fallback", () => {
@@ -931,7 +944,9 @@ class IPCHandlers {
 
     ipcMain.handle("seo-radar-set-config", async (_event, config) => {
       try {
-        return { success: true, config: this.seoRadarStore.setConfig(config) };
+        const nextConfig = this.seoRadarStore.setConfig(config);
+        this.seoRadarScheduler.reschedule();
+        return { success: true, config: nextConfig };
       } catch (error) {
         return { success: false, error: error.message };
       }
@@ -958,7 +973,7 @@ class IPCHandlers {
 
     ipcMain.handle("seo-radar-run-now", async () => {
       try {
-        return { success: true, result: await this._runSeoYoutubeRadar() };
+        return { success: true, result: await this.seoRadarScheduler.runNow() };
       } catch (error) {
         debugLogger.error("SEO YouTube Radar run failed", { error: error.message }, "seo-radar");
         return { success: false, error: error.message };
