@@ -24,6 +24,7 @@ const SECRET_KEYS = [
   "BEDROCK_SESSION_TOKEN",
   "AZURE_OPENAI_API_KEY",
   "VERTEX_API_KEY",
+  "YOUTUBE_DATA_API_KEY",
 ];
 
 const SECRET_KEY_SET = new Set(SECRET_KEYS);
@@ -439,6 +440,14 @@ class EnvironmentManager {
   }
   saveVertexApiKey(key) {
     return this._saveKey("VERTEX_API_KEY", key);
+  }
+
+  getYouTubeDataApiKey() {
+    return this._getKey("YOUTUBE_DATA_API_KEY");
+  }
+
+  saveYouTubeDataApiKey(key) {
+    return this._saveKey("YOUTUBE_DATA_API_KEY", key);
   }
 
   getDictationKey() {

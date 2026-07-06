@@ -65,6 +65,29 @@ export interface NoteItem {
   team_id?: string | null;
 }
 
+export interface SeoRadarConfig {
+  enabled: boolean;
+  keywords: string[];
+  lookbackHours: number;
+  maxSearchResultsPerQuery: number;
+  maxVideosToProcess: number;
+  minDurationSeconds: number;
+  excludeShorts: boolean;
+  regionCode: string;
+  language: string;
+  runHourLocal: number;
+  localModelId: string;
+}
+
+export interface SeoRadarRunResult {
+  processed: number;
+  rejected: number;
+  skipped: number;
+  candidates: number;
+  errors: Array<{ videoId?: string; stage?: string; error: string }>;
+  skipReason?: string;
+}
+
 export type ShareVisibility = "private" | "link" | "domain" | "invited";
 
 export interface ShareSettings {
@@ -692,6 +715,19 @@ declare global {
         }
       ) => Promise<{ success: boolean; text?: string; error?: string }>;
       getPathForFile: (file: File) => string;
+
+      // SEO YouTube Radar
+      seoRadarGetConfig: () => Promise<SeoRadarConfig>;
+      seoRadarSetConfig: (
+        config: Partial<SeoRadarConfig>
+      ) => Promise<{ success: boolean; config?: SeoRadarConfig; error?: string }>;
+      seoRadarSaveYouTubeKey: (key: string) => Promise<{ success: boolean; error?: string }>;
+      seoRadarHasYouTubeKey: () => Promise<{ success: boolean; hasKey: boolean; error?: string }>;
+      seoRadarRunNow: () => Promise<{
+        success: boolean;
+        result?: SeoRadarRunResult;
+        error?: string;
+      }>;
 
       // Note event listeners
       onNoteAdded?: (callback: (note: NoteItem) => void) => () => void;

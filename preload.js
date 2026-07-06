@@ -132,6 +132,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("transcribe-audio-file", filePath, options),
   getPathForFile: (file) => webUtils.getPathForFile(file),
 
+  // SEO YouTube Radar
+  seoRadarGetConfig: () => ipcRenderer.invoke("seo-radar-get-config"),
+  seoRadarSetConfig: (config) => ipcRenderer.invoke("seo-radar-set-config", config),
+  seoRadarSaveYouTubeKey: (key) => ipcRenderer.invoke("seo-radar-save-youtube-key", key),
+  seoRadarHasYouTubeKey: () => ipcRenderer.invoke("seo-radar-has-youtube-key"),
+  seoRadarRunNow: () => ipcRenderer.invoke("seo-radar-run-now"),
+
   onNoteAdded: (callback) => {
     const listener = (_event, note) => callback?.(note);
     ipcRenderer.on("note-added", listener);
