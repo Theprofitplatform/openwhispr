@@ -40,6 +40,7 @@ const {
   sanitizeWhisperVadConfig,
   resolveContextSileroEnabled,
 } = require("./whisperVadConfig");
+const { importYoutubeAudio } = require("./youtubeImport");
 
 const STREAMING_CLIENT_BY_PROVIDER = {
   "openai-realtime": OpenAIRealtimeStreaming,
@@ -1536,6 +1537,15 @@ class IPCHandlers {
         return stats.size;
       } catch {
         return 0;
+      }
+    });
+
+    ipcMain.handle("import-youtube-audio", async (_event, url) => {
+      try {
+        return await importYoutubeAudio(url);
+      } catch (error) {
+        debugLogger.error("YouTube audio import error", { error: error.message }, "upload");
+        return { success: false, error: error.message || "YouTube import failed." };
       }
     });
 

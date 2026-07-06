@@ -2106,7 +2106,13 @@
       "switchToCloudForLargeFiles": "切换到 OpenWhispr Cloud 来转录此文件。",
       "createAccount": "创建账户",
       "upgrade": "升级",
-      "switchToCloud": "OpenWhispr Cloud"
+      "switchToCloud": "OpenWhispr Cloud",
+      "youtubeUrlLabel": "YouTube 链接",
+      "youtubeUrlPlaceholder": "粘贴 YouTube 链接",
+      "youtubeImport": "导入",
+      "youtubeImporting": "导入中",
+      "youtubeImportUnavailable": "YouTube 导入不可用。请重启 OpenWhispr 后重试。",
+      "youtubeImportFailed": "无法导入 YouTube 音频。"
     },
     "meeting": {
       "title": "会议笔记",

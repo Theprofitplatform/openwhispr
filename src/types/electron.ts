@@ -676,6 +676,12 @@ declare global {
       // Audio file operations
       selectAudioFile: () => Promise<{ canceled: boolean; filePath?: string }>;
       getFileSize?: (filePath: string) => Promise<number>;
+      importYoutubeAudio?: (url: string) => Promise<{
+        success: boolean;
+        audioPath?: string;
+        promptPath?: string;
+        error?: string;
+      }>;
       transcribeAudioFile: (
         filePath: string,
         options?: {

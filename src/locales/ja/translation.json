@@ -2094,7 +2094,13 @@
       "switchToCloudForLargeFiles": "このファイルを文字起こしするには OpenWhispr Cloud に切り替えてください。",
       "createAccount": "アカウント作成",
       "upgrade": "アップグレード",
-      "switchToCloud": "OpenWhispr Cloud"
+      "switchToCloud": "OpenWhispr Cloud",
+      "youtubeUrlLabel": "YouTube リンク",
+      "youtubeUrlPlaceholder": "YouTube リンクを貼り付け",
+      "youtubeImport": "インポート",
+      "youtubeImporting": "インポート中",
+      "youtubeImportUnavailable": "YouTube インポートは利用できません。OpenWhispr を再起動してもう一度お試しください。",
+      "youtubeImportFailed": "YouTube 音声をインポートできませんでした。"
     },
     "meeting": {
       "title": "議事録",

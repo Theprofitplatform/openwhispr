@@ -2111,7 +2111,13 @@
       "switchToCloudForLargeFiles": "Переключитесь на OpenWhispr Cloud, чтобы транскрибировать этот файл.",
       "createAccount": "Создать аккаунт",
       "upgrade": "Обновить",
-      "switchToCloud": "OpenWhispr Cloud"
+      "switchToCloud": "OpenWhispr Cloud",
+      "youtubeUrlLabel": "Ссылка YouTube",
+      "youtubeUrlPlaceholder": "Вставьте ссылку YouTube",
+      "youtubeImport": "Импорт",
+      "youtubeImporting": "Импорт",
+      "youtubeImportUnavailable": "Импорт YouTube недоступен. Перезапустите OpenWhispr и попробуйте снова.",
+      "youtubeImportFailed": "Не удалось импортировать аудио YouTube."
     },
     "meeting": {
       "title": "Заметки со встреч",

@@ -2111,7 +2111,13 @@
       "switchToCloudForLargeFiles": "Passa a OpenWhispr Cloud per trascrivere questo file.",
       "createAccount": "Crea account",
       "upgrade": "Aggiorna",
-      "switchToCloud": "OpenWhispr Cloud"
+      "switchToCloud": "OpenWhispr Cloud",
+      "youtubeUrlLabel": "Link YouTube",
+      "youtubeUrlPlaceholder": "Incolla link YouTube",
+      "youtubeImport": "Importa",
+      "youtubeImporting": "Importazione",
+      "youtubeImportUnavailable": "L'importazione da YouTube non è disponibile. Riavvia OpenWhispr e riprova.",
+      "youtubeImportFailed": "Impossibile importare l'audio di YouTube."
     },
     "meeting": {
       "title": "Note delle riunioni",
