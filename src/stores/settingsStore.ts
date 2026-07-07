@@ -1,5 +1,10 @@
 import { create } from "zustand";
 import { API_ENDPOINTS } from "../config/constants";
+import {
+  getDefaultReasoningMode,
+  getDefaultTranscriptionMode,
+  normalizeInferenceMode,
+} from "../config/defaultModes";
 import i18n, { normalizeUiLanguage } from "../i18n";
 import { ensureAgentNameInDictionary } from "../utils/agentName";
 import { useStreamingProvidersStore } from "./streamingProvidersStore";
@@ -834,7 +839,7 @@ function invalidateApiKeyCaches(
 
 export const useSettingsStore = create<SettingsState>()((set, get) => ({
   uiLanguage: normalizeUiLanguage(isBrowser ? localStorage.getItem("uiLanguage") : null),
-  useLocalWhisper: readBoolean("useLocalWhisper", false),
+  useLocalWhisper: readBoolean("useLocalWhisper", true),
   whisperModel: readString("whisperModel", "base"),
   localTranscriptionProvider: (readString("localTranscriptionProvider", "whisper") === "nvidia"
     ? "nvidia"
@@ -852,8 +857,8 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   ),
   // Secrets aren't hydrated yet at construction; the BYOK default is set
   // post-hydration in initializeSettings.
-  cloudTranscriptionMode: readString("cloudTranscriptionMode", "openwhispr"),
-  cleanupCloudMode: readString("cleanupCloudMode", "openwhispr"),
+  cloudTranscriptionMode: readString("cloudTranscriptionMode", "byok"),
+  cleanupCloudMode: readString("cleanupCloudMode", "byok"),
   cleanupCloudBaseUrl: readString("cleanupCloudBaseUrl", API_ENDPOINTS.OPENAI_BASE),
   cortiEnvironment: readString("cortiEnvironment", "us"),
   cortiTenant: readString("cortiTenant", "base"),
@@ -992,9 +997,9 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   isSignedIn: readBoolean("isSignedIn", false),
 
   transcriptionMode: (() => {
-    const v = readString("transcriptionMode", "openwhispr");
-    if (v === "openwhispr" || v === "providers" || v === "local" || v === "self-hosted") return v;
-    return "openwhispr" as InferenceMode;
+    const v = isBrowser ? localStorage.getItem("transcriptionMode") : null;
+    const mode = normalizeInferenceMode(v, getDefaultTranscriptionMode());
+    return mode === "enterprise" ? getDefaultTranscriptionMode() : mode;
   })(),
   remoteTranscriptionType: (() => {
     const v = readString("remoteTranscriptionType", "lan");
@@ -1003,25 +1008,17 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   remoteTranscriptionUrl: readString("remoteTranscriptionUrl", ""),
   remoteTranscriptionModel: readString("remoteTranscriptionModel", ""),
   cleanupMode: (() => {
-    const v = readString("cleanupMode", "openwhispr");
-    if (
-      v === "openwhispr" ||
-      v === "providers" ||
-      v === "local" ||
-      v === "self-hosted" ||
-      v === "enterprise"
-    )
-      return v;
-    return "openwhispr" as InferenceMode;
+    const v = isBrowser ? localStorage.getItem("cleanupMode") : null;
+    return normalizeInferenceMode(v, getDefaultReasoningMode());
   })(),
   cleanupRemoteUrl: readString("cleanupRemoteUrl", ""),
 
   meetingTranscriptionMode: (() => {
-    const v = readString("meetingTranscriptionMode", "openwhispr");
-    if (v === "openwhispr" || v === "providers" || v === "local" || v === "self-hosted") return v;
-    return "openwhispr" as InferenceMode;
+    const v = isBrowser ? localStorage.getItem("meetingTranscriptionMode") : null;
+    const mode = normalizeInferenceMode(v, getDefaultTranscriptionMode());
+    return mode === "enterprise" ? getDefaultTranscriptionMode() : mode;
   })(),
-  meetingUseLocalWhisper: readBoolean("meetingUseLocalWhisper", false),
+  meetingUseLocalWhisper: readBoolean("meetingUseLocalWhisper", true),
   meetingWhisperModel: readString("meetingWhisperModel", ""),
   meetingLocalTranscriptionProvider: (readString("meetingLocalTranscriptionProvider", "whisper") ===
   "nvidia"
@@ -1039,11 +1036,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   meetingRemoteTranscriptionUrl: readString("meetingRemoteTranscriptionUrl", ""),
 
   uploadTranscriptionMode: (() => {
-    const v = readString("uploadTranscriptionMode", "openwhispr");
-    if (v === "openwhispr" || v === "providers" || v === "local" || v === "self-hosted") return v;
-    return "openwhispr" as InferenceMode;
+    const v = isBrowser ? localStorage.getItem("uploadTranscriptionMode") : null;
+    const mode = normalizeInferenceMode(v, getDefaultTranscriptionMode());
+    return mode === "enterprise" ? getDefaultTranscriptionMode() : mode;
   })(),
-  uploadUseLocalWhisper: readBoolean("uploadUseLocalWhisper", false),
+  uploadUseLocalWhisper: readBoolean("uploadUseLocalWhisper", true),
   uploadWhisperModel: readString("uploadWhisperModel", ""),
   uploadLocalTranscriptionProvider: (readString("uploadLocalTranscriptionProvider", "whisper") ===
   "nvidia"
@@ -1056,16 +1053,8 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   uploadCloudTranscriptionMode: readString("uploadCloudTranscriptionMode", ""),
 
   noteFormattingMode: (() => {
-    const v = readString("noteFormattingMode", "openwhispr");
-    if (
-      v === "openwhispr" ||
-      v === "providers" ||
-      v === "local" ||
-      v === "self-hosted" ||
-      v === "enterprise"
-    )
-      return v;
-    return "openwhispr" as InferenceMode;
+    const v = isBrowser ? localStorage.getItem("noteFormattingMode") : null;
+    return normalizeInferenceMode(v, getDefaultReasoningMode());
   })(),
   noteFormattingProvider: readString("noteFormattingProvider", ""),
   noteFormattingModel: readString("noteFormattingModel", ""),
