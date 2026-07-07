@@ -30,19 +30,32 @@ import {
 } from "../../stores/settingsStore";
 import { generateNoteTitle } from "../../utils/generateTitle";
 import { getBaseLanguageCode } from "../../utils/languageSupport";
+import {
+  getUploadAvailability,
+  HOSTED_UPLOAD_FREE_MAX_BYTES,
+  type UploadAvailabilityMode,
+  type UploadAvailabilityReason,
+} from "./uploadAvailability";
+import { transcribeUploadedAudioFile } from "./uploadTranscriptionRouting";
 
 type UploadState = "idle" | "selected" | "transcribing" | "complete" | "error";
 
 const SUPPORTED_EXTENSIONS = ["mp3", "wav", "m4a", "webm", "ogg", "oga", "flac", "aac"];
 
-const BYOK_MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB — hard limit for bring-your-own-key
-const CLOUD_FREE_MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB — free plan cloud limit
-const CLOUD_PRO_MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB — pro plan cloud limit
-
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getUploadAvailabilityMode(
+  useLocalWhisper: boolean,
+  cloudTranscriptionMode: string,
+  cloudTranscriptionProvider: string
+): UploadAvailabilityMode {
+  if (useLocalWhisper) return "local";
+  if (cloudTranscriptionMode === "openwhispr") return "openwhispr";
+  return cloudTranscriptionProvider === "custom" ? "self-hosted" : "providers";
 }
 
 interface UploadAudioViewProps {
@@ -101,6 +114,9 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
   const setUploadCloudTranscriptionMode = useSettingsStore(
     (s) => s.setUploadCloudTranscriptionMode
   );
+  const setUploadCloudTranscriptionProvider = useSettingsStore(
+    (s) => s.setUploadCloudTranscriptionProvider
+  );
   const setUploadUseLocalWhisper = useSettingsStore((s) => s.setUploadUseLocalWhisper);
 
   const cortiClientId = useSettingsStore((s) => s.cortiClientId);
@@ -114,40 +130,28 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
   );
   const useCleanupModel = useSettingsStore((s) => s.useCleanupModel);
 
-  const isOpenWhisprCloud =
-    isSignedIn && cloudTranscriptionMode === "openwhispr" && !useLocalWhisper;
-
-  // Mode detection
-  const isByok = !useLocalWhisper && !isOpenWhisprCloud;
-
-  // Mode-aware file size validation
-  // Local: no limits at all
-  // BYOK: 25 MB hard max regardless of plan
-  // Cloud free: 25 MB max (upgrade to Pro for more)
-  // Cloud pro: 500 MB max
-  let fileTooLarge = false;
-  let requiresUpgrade = false;
-  let requiresAccount = false;
-  let byokTooLarge = false;
-  let isLargeFile = false;
-
-  if (file) {
-    if (useLocalWhisper) {
-      // Local transcription: no file size restrictions
-    } else if (cloudTranscriptionProvider === "custom") {
-      // Custom endpoints (e.g. local whisper.cpp): no file size restrictions
-    } else if (isByok) {
-      byokTooLarge = file.sizeBytes > BYOK_MAX_FILE_SIZE;
-      if (byokTooLarge && !isSignedIn) {
-        requiresAccount = true;
-      }
-    } else {
-      // Cloud (OpenWhispr) — user is always signed in here
-      fileTooLarge = file.sizeBytes > CLOUD_PRO_MAX_FILE_SIZE;
-      requiresUpgrade = !isProUser && file.sizeBytes > CLOUD_FREE_MAX_FILE_SIZE;
-      isLargeFile = file.sizeBytes > CLOUD_FREE_MAX_FILE_SIZE;
-    }
-  }
+  const isOpenWhisprCloud = cloudTranscriptionMode === "openwhispr" && !useLocalWhisper;
+  const uploadMode = getUploadAvailabilityMode(
+    useLocalWhisper,
+    cloudTranscriptionMode,
+    cloudTranscriptionProvider
+  );
+  const uploadAvailability = file
+    ? getUploadAvailability({
+        fileSizeBytes: file.sizeBytes,
+        mode: uploadMode,
+        provider: cloudTranscriptionProvider,
+        isSignedIn,
+        isProUser: Boolean(isProUser),
+      })
+    : null;
+  const availabilityReason = uploadAvailability?.reason ?? "ok";
+  const fileTooLarge = availabilityReason === "hosted_file_too_large";
+  const requiresUpgrade = availabilityReason === "hosted_large_file_requires_pro";
+  const requiresAccount = availabilityReason === "account_required_for_hosted";
+  const byokTooLarge = availabilityReason === "byok_provider_file_too_large";
+  const isLargeFile =
+    uploadMode === "openwhispr" && Boolean(file && file.sizeBytes > HOSTED_UPLOAD_FREE_MAX_BYTES);
 
   useEffect(() => {
     return () => {
@@ -348,35 +352,25 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
     }
 
     try {
-      let res: { success: boolean; text?: string; error?: string; code?: string };
-
-      if (isOpenWhisprCloud) {
-        res = await withSessionRefresh(async () => {
-          const r = await window.electronAPI.transcribeAudioFileCloud!(file.path);
-          if (!r.success && r.code) {
-            throw Object.assign(new Error(r.error || "Cloud transcription failed"), {
-              code: r.code,
-            });
-          }
-          return r;
-        });
-      } else if (useLocalWhisper) {
-        res = await window.electronAPI.transcribeAudioFile(file.path, {
-          provider: localTranscriptionProvider as "whisper" | "nvidia",
-          model: localTranscriptionProvider === "nvidia" ? parakeetModel : whisperModel,
-        });
-      } else {
-        res = await window.electronAPI.transcribeAudioFileByok!({
+      const res = await transcribeUploadedAudioFile(
+        window.electronAPI,
+        {
           filePath: file.path,
+          useLocalWhisper,
+          localTranscriptionProvider,
+          parakeetModel,
+          whisperModel,
+          cloudTranscriptionMode,
+          cloudTranscriptionProvider,
+          cloudTranscriptionBaseUrl,
+          cloudTranscriptionModel,
           apiKey: getActiveApiKey(),
-          baseUrl: cloudTranscriptionBaseUrl || "",
-          model: cloudTranscriptionModel,
-          provider: cloudTranscriptionProvider,
           language: getBaseLanguageCode(preferredLanguage) || "en",
           environment: cortiEnvironment,
           tenant: cortiTenant,
-        });
-      }
+        },
+        withSessionRefresh
+      );
 
       if (runId !== runIdRef.current) return;
 
@@ -457,10 +451,18 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
 
   const handleCreateAccount = useStartOnboarding();
 
-  const switchToCloud = () => {
-    setUploadTranscriptionMode("openwhispr");
-    setUploadCloudTranscriptionMode("openwhispr");
+  const switchToLocal = () => {
+    setUploadTranscriptionMode("local");
+    setUploadUseLocalWhisper(true);
+    setUploadCloudTranscriptionMode("byok");
+  };
+
+  const switchToSelfHosted = () => {
+    setUploadTranscriptionMode("self-hosted");
     setUploadUseLocalWhisper(false);
+    setUploadCloudTranscriptionMode("byok");
+    setUploadCloudTranscriptionProvider("custom");
+    onOpenSettings?.("uploadTranscription");
   };
 
   const getTranscribingLabel = (): string => {
@@ -498,16 +500,18 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
               getActiveModelLabel={getActiveModelLabel}
               reset={reset}
               handleTranscribe={handleTranscribe}
+              canTranscribe={uploadAvailability?.canTranscribe ?? true}
+              availabilityReason={availabilityReason}
               requiresUpgrade={!!requiresUpgrade}
               fileTooLarge={fileTooLarge}
               isLargeFile={isLargeFile}
               isOpenWhisprCloud={isOpenWhisprCloud}
               byokTooLarge={byokTooLarge}
               requiresAccount={requiresAccount}
-              isProUser={!!isProUser}
               onUpgrade={() => usage?.openCheckout()}
               onCreateAccount={handleCreateAccount}
-              onSwitchToCloud={switchToCloud}
+              onSwitchToLocal={switchToLocal}
+              onSwitchToSelfHosted={switchToSelfHosted}
             />
           )}
 
@@ -739,16 +743,18 @@ interface SelectedViewProps {
   getActiveModelLabel: () => string;
   reset: () => void;
   handleTranscribe: () => void;
+  canTranscribe: boolean;
+  availabilityReason: UploadAvailabilityReason;
   requiresUpgrade: boolean;
   fileTooLarge: boolean;
   isLargeFile: boolean;
   isOpenWhisprCloud: boolean;
   byokTooLarge: boolean;
   requiresAccount: boolean;
-  isProUser: boolean;
   onUpgrade: () => void;
   onCreateAccount: () => void;
-  onSwitchToCloud: () => void;
+  onSwitchToLocal: () => void;
+  onSwitchToSelfHosted: () => void;
 }
 
 function SelectedView({
@@ -757,18 +763,23 @@ function SelectedView({
   getActiveModelLabel,
   reset,
   handleTranscribe,
+  canTranscribe,
+  availabilityReason,
   requiresUpgrade,
   fileTooLarge,
   isLargeFile,
   isOpenWhisprCloud,
   byokTooLarge,
   requiresAccount,
-  isProUser,
   onUpgrade,
   onCreateAccount,
-  onSwitchToCloud,
+  onSwitchToLocal,
+  onSwitchToSelfHosted,
 }: SelectedViewProps) {
-  const canTranscribe = !fileTooLarge && !requiresUpgrade && !byokTooLarge;
+  const showLocalAlternatives =
+    availabilityReason === "byok_provider_file_too_large" ||
+    availabilityReason === "hosted_file_too_large" ||
+    availabilityReason === "hosted_large_file_requires_pro";
 
   return (
     <div style={{ animation: "float-up 0.3s ease-out" }}>
@@ -806,15 +817,14 @@ function SelectedView({
           <p className="text-xs text-foreground/50 leading-relaxed">
             {t("notes.upload.byokTooLarge")}
           </p>
-          <p className="text-xs text-foreground/35 leading-relaxed mt-1.5">
-            {t("notes.upload.byokTooLargeDetail")}
-          </p>
-          <p className="text-xs text-foreground/50 leading-relaxed mt-1.5 font-medium">
-            {requiresAccount
-              ? t("notes.upload.byokTooLargeNeedsAccount")
-              : isProUser
-                ? t("notes.upload.switchToCloudForLargeFiles")
-                : t("notes.upload.byokTooLargeNeedsUpgrade")}
+        </div>
+      )}
+
+      {/* Hosted cloud mode selected while signed out */}
+      {requiresAccount && (
+        <div className="rounded-lg border border-primary/12 dark:border-primary/15 bg-primary/[0.03] px-3 py-2.5 mb-3">
+          <p className="text-xs text-foreground/50 leading-relaxed">
+            {t("common.freeAccountRequired")}
           </p>
         </div>
       )}
@@ -836,8 +846,7 @@ function SelectedView({
       )}
 
       <div className="flex items-center gap-2 justify-center flex-wrap">
-        {/* BYOK too large — not signed in: Create Account */}
-        {byokTooLarge && requiresAccount && (
+        {requiresAccount && (
           <Button
             variant="default"
             size="sm"
@@ -848,29 +857,31 @@ function SelectedView({
           </Button>
         )}
 
-        {/* BYOK too large — signed in, Pro: Switch to Cloud */}
-        {byokTooLarge && !requiresAccount && isProUser && (
+        {requiresUpgrade && (
+          <Button variant="default" size="sm" onClick={onUpgrade} className="h-8 text-xs px-5">
+            {t("notes.upload.upgrade")}
+          </Button>
+        )}
+
+        {showLocalAlternatives && (
           <Button
-            variant="default"
+            variant={requiresUpgrade ? "outline" : "default"}
             size="sm"
-            onClick={onSwitchToCloud}
+            onClick={onSwitchToLocal}
             className="h-8 text-xs px-5"
           >
-            {t("notes.upload.switchToCloud")}
+            {t("upgradePrompt.switchToLocal")}
           </Button>
         )}
 
-        {/* BYOK too large — signed in, Free: Upgrade */}
-        {byokTooLarge && !requiresAccount && !isProUser && (
-          <Button variant="default" size="sm" onClick={onUpgrade} className="h-8 text-xs px-5">
-            {t("notes.upload.upgrade")}
-          </Button>
-        )}
-
-        {/* Cloud requires upgrade */}
-        {!byokTooLarge && requiresUpgrade && (
-          <Button variant="default" size="sm" onClick={onUpgrade} className="h-8 text-xs px-5">
-            {t("notes.upload.upgrade")}
+        {showLocalAlternatives && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onSwitchToSelfHosted}
+            className="h-8 text-xs px-5"
+          >
+            {t("settingsPage.transcription.modes.selfHosted")}
           </Button>
         )}
 
