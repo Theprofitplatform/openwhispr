@@ -47,37 +47,6 @@ export default function UpgradePrompt({
         </div>
 
         <div className="space-y-2 pt-2">
-          {isPastDue ? (
-            <OptionCard
-              title={t("upgradePrompt.updatePayment")}
-              description={t("upgradePrompt.updatePaymentDescription")}
-              onClick={() => {
-                usage?.openBillingPortal();
-              }}
-              highlighted
-              disabled={usage?.checkoutLoading}
-            />
-          ) : (
-            <OptionCard
-              title={t("upgradePrompt.upgradeToPro")}
-              description={t("upgradePrompt.upgradeDescription")}
-              onClick={() => {
-                usage?.openCheckout();
-              }}
-              highlighted
-              disabled={usage?.checkoutLoading}
-            />
-          )}
-          <OptionCard
-            title={t("upgradePrompt.useApiKey")}
-            description={t("upgradePrompt.useApiKeyDescription")}
-            onClick={() => {
-              const s = useSettingsStore.getState();
-              s.setTranscriptionMode("providers");
-              s.setCloudTranscriptionMode("byok");
-              onOpenChange(false);
-            }}
-          />
           <OptionCard
             title={t("upgradePrompt.switchToLocal")}
             description={t("upgradePrompt.switchToLocalDescription")}
@@ -88,7 +57,37 @@ export default function UpgradePrompt({
               s.setCloudTranscriptionMode("byok");
               onOpenChange(false);
             }}
+            highlighted
           />
+          <OptionCard
+            title={t("upgradePrompt.useApiKey")}
+            description={t("upgradePrompt.useApiKeyDescription")}
+            onClick={() => {
+              const s = useSettingsStore.getState();
+              s.setTranscriptionMode("providers");
+              s.setCloudTranscriptionMode("byok");
+              onOpenChange(false);
+            }}
+          />
+          {isPastDue ? (
+            <OptionCard
+              title={t("upgradePrompt.updatePayment")}
+              description={t("upgradePrompt.updatePaymentDescription")}
+              onClick={() => {
+                usage?.openBillingPortal();
+              }}
+              disabled={usage?.checkoutLoading}
+            />
+          ) : (
+            <OptionCard
+              title={t("upgradePrompt.upgradeToPro")}
+              description={t("upgradePrompt.upgradeDescription")}
+              onClick={() => {
+                usage?.openCheckout();
+              }}
+              disabled={usage?.checkoutLoading}
+            />
+          )}
         </div>
 
         <p className="text-xs text-muted-foreground/60 text-center">

@@ -13,6 +13,11 @@ import { useSettings } from "../hooks/useSettings";
 import { useAuth } from "../hooks/useAuth";
 import { useUsage } from "../hooks/useUsage";
 import {
+  shouldShowHostedUpgradePrompt,
+  summariseUsageDisplayMode,
+} from "../hooks/useUsageDisplayMode";
+import { resolveFeatureAvailability } from "../config/featureAvailability";
+import {
   useTranscriptions,
   useShowDiscarded,
   initializeTranscriptions,
@@ -120,6 +125,19 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
   } = useSettings();
   const { isSignedIn, isLoaded: authLoaded, user } = useAuth();
   const usage = useUsage();
+  const transcriptionMode = useSettingsStore((s) => s.transcriptionMode);
+  const transcriptionAvailability = resolveFeatureAvailability({
+    isSignedIn,
+    isSubscribed: Boolean(usage?.isSubscribed),
+    isTrial: Boolean(usage?.isTrial),
+    hostedUsageOverLimit: Boolean(usage?.isOverLimit),
+    modes: { transcription: transcriptionMode },
+  }).transcription;
+  const usageDisplayMode = summariseUsageDisplayMode({
+    activeRoute: transcriptionAvailability.route,
+    isOverLimit: Boolean(usage?.isOverLimit),
+  });
+  const sidebarOverLimit = usageDisplayMode === "hosted-upgrade";
 
   const {
     status: updateStatus,
@@ -748,7 +766,7 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
               setSettingsSection("plansBilling");
               setShowSettings(true);
             }}
-            isOverLimit={usage?.isOverLimit ?? false}
+            isOverLimit={sidebarOverLimit}
             userName={user?.name}
             userEmail={user?.email}
             userImage={user?.image}
@@ -756,6 +774,7 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
             authLoaded={authLoaded}
             isProUser={!!(usage?.isSubscribed || usage?.isTrial)}
             usageLoaded={usage?.hasLoaded ?? false}
+            showHostedUpgradePrompt={shouldShowHostedUpgradePrompt(usageDisplayMode)}
             updateAction={
               !updateStatus.isDevelopment &&
               (updateStatus.updateAvailable ||
