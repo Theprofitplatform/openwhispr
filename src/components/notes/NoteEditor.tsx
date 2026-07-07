@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import ShareNoteDialog from "./ShareNoteDialog";
 import { useShareCacheEntry } from "../../stores/noteStore";
-import { SHARING_ENABLED } from "../../lib/features";
 import { RichTextEditor } from "../ui/RichTextEditor";
 import type { Editor } from "@tiptap/react";
 import { MeetingTranscriptChat, SelectionBar } from "./MeetingTranscriptChat";
@@ -785,31 +784,29 @@ export default function NoteEditor({
                   )}
                 </div>
               )}
-              {SHARING_ENABLED && note.cloud_id && (
-                <button
-                  type="button"
-                  onClick={() => setShareDialogOpen(true)}
+              <button
+                type="button"
+                onClick={() => setShareDialogOpen(true)}
+                className={cn(
+                  "shrink-0 h-6 w-6 flex items-center justify-center rounded-md",
+                  "bg-foreground/4 dark:bg-white/5",
+                  "hover:bg-foreground/8 dark:hover:bg-white/10",
+                  "active:bg-foreground/12 dark:active:bg-white/15",
+                  "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                  "transition-colors duration-150"
+                )}
+                aria-label={t("noteEditor.share.button")}
+              >
+                <Share2
+                  size={11}
                   className={cn(
-                    "shrink-0 h-6 w-6 flex items-center justify-center rounded-md",
-                    "bg-foreground/4 dark:bg-white/5",
-                    "hover:bg-foreground/8 dark:hover:bg-white/10",
-                    "active:bg-foreground/12 dark:active:bg-white/15",
-                    "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                    "transition-colors duration-150"
+                    "transition-colors",
+                    isShared
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-foreground/50 dark:text-foreground/40"
                   )}
-                  aria-label={t("noteEditor.share.button")}
-                >
-                  <Share2
-                    size={11}
-                    className={cn(
-                      "transition-colors",
-                      isShared
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-foreground/50 dark:text-foreground/40"
-                    )}
-                  />
-                </button>
-              )}
+                />
+              </button>
               {(onExportNote || onExportTranscript) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -979,7 +976,7 @@ export default function NoteEditor({
           onNewChat={embeddedChat.startNewChat}
         />
       )}
-      {SHARING_ENABLED && note.cloud_id && (
+      {shareDialogOpen && (
         <ShareNoteDialog open={shareDialogOpen} onOpenChange={setShareDialogOpen} note={note} />
       )}
     </div>
