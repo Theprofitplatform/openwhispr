@@ -125,6 +125,7 @@ const BOOLEAN_SETTINGS = new Set([
   "audioCuesEnabled",
   "pauseMediaOnDictation",
   "floatingIconAutoHide",
+  "contextAwarenessEnabled",
   "startMinimized",
   "meetingProcessDetection",
   "speakerDiarizationEnabled",
@@ -413,6 +414,7 @@ export interface SettingsState
   audioCuesEnabled: boolean;
   pauseMediaOnDictation: boolean;
   floatingIconAutoHide: boolean;
+  contextAwarenessEnabled: boolean;
   startMinimized: boolean;
   gcalAccounts: GoogleCalendarAccount[];
   gcalConnected: boolean;
@@ -639,6 +641,7 @@ export interface SettingsState
   setAudioCuesEnabled: (value: boolean) => void;
   setPauseMediaOnDictation: (value: boolean) => void;
   setFloatingIconAutoHide: (enabled: boolean) => void;
+  setContextAwarenessEnabled: (value: boolean) => void;
   setStartMinimized: (enabled: boolean) => void;
   setGcalAccounts: (accounts: GoogleCalendarAccount[]) => void;
   setNotificationsEnabled: (value: boolean) => void;
@@ -979,6 +982,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   audioCuesEnabled: readBoolean("audioCuesEnabled", true),
   pauseMediaOnDictation: readBoolean("pauseMediaOnDictation", false),
   floatingIconAutoHide: readBoolean("floatingIconAutoHide", false),
+  contextAwarenessEnabled: readBoolean("contextAwarenessEnabled", true),
   startMinimized: readBoolean("startMinimized", false),
   notificationsEnabled: readBoolean("notificationsEnabled", true),
   notifyMeetingDetection: readBoolean("notifyMeetingDetection", true),
@@ -1485,6 +1489,15 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   setSaveDiscardedTranscriptions: createBooleanSetter("saveDiscardedTranscriptions"),
   setAudioCuesEnabled: createBooleanSetter("audioCuesEnabled"),
   setPauseMediaOnDictation: createBooleanSetter("pauseMediaOnDictation"),
+
+  setContextAwarenessEnabled: (enabled: boolean) => {
+    if (get().contextAwarenessEnabled === enabled) return;
+    if (isBrowser) localStorage.setItem("contextAwarenessEnabled", String(enabled));
+    set({ contextAwarenessEnabled: enabled });
+    if (isBrowser) {
+      window.electronAPI?.notifyContextAwarenessChanged?.(enabled);
+    }
+  },
 
   setFloatingIconAutoHide: (enabled: boolean) => {
     if (get().floatingIconAutoHide === enabled) return;

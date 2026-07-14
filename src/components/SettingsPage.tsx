@@ -1070,6 +1070,8 @@ export default function SettingsPage({
     setKeepTranscriptionInClipboard,
     floatingIconAutoHide,
     setFloatingIconAutoHide,
+    contextAwarenessEnabled,
+    setContextAwarenessEnabled,
     startMinimized,
     setStartMinimized,
     panelStartPosition,
@@ -2986,6 +2988,24 @@ export default function SettingsPage({
                         {t("settingsPage.general.floatingIcon.bottomLeft")}
                       </option>
                     </select>
+                  </SettingsRow>
+                </SettingsPanelRow>
+              </SettingsPanel>
+            </div>
+
+            {/* Context Awareness */}
+            <div>
+              <SectionHeader title={t("settingsPage.general.contextAwareness.title")} />
+              <SettingsPanel>
+                <SettingsPanelRow>
+                  <SettingsRow
+                    label={t("settingsPage.general.contextAwareness.label")}
+                    description={t("settingsPage.general.contextAwareness.description")}
+                  >
+                    <Toggle
+                      checked={contextAwarenessEnabled}
+                      onChange={setContextAwarenessEnabled}
+                    />
                   </SettingsRow>
                 </SettingsPanelRow>
               </SettingsPanel>

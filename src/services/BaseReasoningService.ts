@@ -1,12 +1,14 @@
 import { getCleanupSystemPrompt } from "../config/prompts";
 import { getSettings } from "../stores/settingsStore";
 import { getDictionaryHintWords } from "../utils/snippets";
+import type { AppContext } from "../types/electron";
 
 export interface ReasoningConfig {
   maxTokens?: number;
   temperature?: number;
   contextSize?: number;
   systemPrompt?: string;
+  appContext?: AppContext | null;
   lanUrl?: string;
   baseUrl?: string;
   customApiKey?: string;
@@ -29,12 +31,13 @@ export abstract class BaseReasoningService {
     return getSettings().uiLanguage || "en";
   }
 
-  protected getSystemPrompt(agentName: string | null): string {
+  protected getSystemPrompt(agentName: string | null, appContext?: AppContext | null): string {
     return getCleanupSystemPrompt(
       agentName,
       this.getCustomDictionary(),
       this.getPreferredLanguage(),
-      this.getUiLanguage()
+      this.getUiLanguage(),
+      appContext
     );
   }
 

@@ -1402,6 +1402,11 @@
         "themeDescription": "选择浅色、深色或跟随系统",
         "title": "外观"
       },
+      "contextAwareness": {
+        "title": "上下文感知",
+        "label": "共享当前应用上下文",
+        "description": "将当前应用名称和文件发送给 AI 以获得更相关的回复"
+      },
       "floatingIcon": {
         "autoHide": "空闲时自动隐藏",
         "autoHideDescription": "在开始听写前保持图标隐藏",

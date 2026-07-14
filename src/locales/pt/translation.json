@@ -1381,6 +1381,11 @@
         "themeDescription": "Escolha claro, escuro ou acompanhe o sistema",
         "title": "Aparência"
       },
+      "contextAwareness": {
+        "title": "Reconhecimento de contexto",
+        "label": "Compartilhar o contexto do app ativo",
+        "description": "Envia o nome do app ativo e o arquivo para a IA para respostas mais relevantes"
+      },
       "floatingIcon": {
         "autoHide": "Ocultar automaticamente quando ocioso",
         "autoHideDescription": "Mantenha o ícone oculto até iniciar o ditado",

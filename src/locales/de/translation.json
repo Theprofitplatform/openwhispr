@@ -1402,6 +1402,11 @@
         "themeDescription": "Wählen Sie zwischen Hell, Dunkel oder Systemstandard",
         "title": "Darstellung"
       },
+      "contextAwareness": {
+        "title": "Kontextbewusstsein",
+        "label": "Kontext der aktiven App teilen",
+        "description": "Sende den Namen der aktiven App und die Datei an die KI für relevantere Antworten"
+      },
       "floatingIcon": {
         "autoHide": "Automatisch ausblenden bei Inaktivität",
         "autoHideDescription": "Symbol ausblenden, bis Sie mit dem Diktieren beginnen",

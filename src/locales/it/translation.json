@@ -1402,6 +1402,11 @@
         "themeDescription": "Scegli chiaro, scuro o in base al sistema",
         "title": "Aspetto"
       },
+      "contextAwareness": {
+        "title": "Consapevolezza del contesto",
+        "label": "Condividi il contesto dell'app attiva",
+        "description": "Invia il nome dell'app attiva e il file all'IA per risposte più pertinenti"
+      },
       "floatingIcon": {
         "autoHide": "Nascondi automaticamente quando inattivo",
         "autoHideDescription": "Mantieni l'icona nascosta finché non inizi a dettare",

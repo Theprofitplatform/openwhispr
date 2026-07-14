@@ -1402,6 +1402,11 @@
         "themeDescription": "ライト、ダーク、またはシステムに合わせる",
         "title": "外観"
       },
+      "contextAwareness": {
+        "title": "コンテキスト認識",
+        "label": "アクティブなアプリのコンテキストを共有",
+        "description": "アクティブなアプリ名とファイルを AI に送信して、より適切な応答を得ます"
+      },
       "floatingIcon": {
         "autoHide": "使用していないときに自動で非表示",
         "autoHideDescription": "ディクテーション開始までアイコンを非表示にする",

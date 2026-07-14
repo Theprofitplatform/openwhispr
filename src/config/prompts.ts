@@ -1,4 +1,29 @@
 import { resolvePrompt } from "./prompts/index";
+import type { AppContext } from "../types/electron";
+
+// Builds the optional "Context" section injected into the cleanup system prompt
+// when IDE context awareness is enabled and a capture is available. Returns "" if
+// there is no usable context, so callers can always concatenate unconditionally.
+function buildAppContextSection(appContext?: AppContext | null): string {
+  if (!appContext?.appName) return "";
+  let contextSection = `\nContext (the user is currently working in):\nApp: ${appContext.appName}`;
+  if (appContext.projectName) {
+    contextSection += `\nProject: ${appContext.projectName}`;
+  }
+  if (appContext.fileName) {
+    contextSection += `\nFile: ${appContext.fileName}`;
+  }
+  if (appContext.openTabs && appContext.openTabs.length > 0) {
+    contextSection += `\nOpen tabs: ${appContext.openTabs.join(", ")}`;
+  }
+  if (appContext.projectFiles && appContext.projectFiles.length > 0) {
+    contextSection += `\nProject files: ${appContext.projectFiles.slice(0, 50).join(", ")}`;
+  }
+  if (appContext.projectName) {
+    contextSection += `\nWhen the user references a file from this project, format it as @${appContext.projectName}/filename.`;
+  }
+  return "\n" + contextSection;
+}
 
 export {
   resolvePrompt,
@@ -13,9 +38,11 @@ export function getCleanupSystemPrompt(
   agentName: string | null,
   customDictionary?: string[],
   language?: string,
-  uiLanguage?: string
+  uiLanguage?: string,
+  appContext?: AppContext | null
 ): string {
-  return resolvePrompt("cleanup", { agentName, language, customDictionary, uiLanguage });
+  const prompt = resolvePrompt("cleanup", { agentName, language, customDictionary, uiLanguage });
+  return prompt + buildAppContextSection(appContext);
 }
 
 export function getWordBoost(customDictionary?: string[]): string[] {

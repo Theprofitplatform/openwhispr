@@ -1450,6 +1450,11 @@
         "themeDescription": "Choisissez clair, sombre ou suivre le système",
         "title": "Apparence"
       },
+      "contextAwareness": {
+        "title": "Sensibilité au contexte",
+        "label": "Partager le contexte de l'app active",
+        "description": "Envoyer le nom de l'application active et le fichier à l'IA pour des réponses plus pertinentes"
+      },
       "floatingIcon": {
         "autoHide": "Masquer automatiquement au repos",
         "autoHideDescription": "Garder l'icône masquée jusqu'au début de la dictée",

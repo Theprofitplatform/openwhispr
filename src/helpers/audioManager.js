@@ -241,6 +241,7 @@ class AudioManager {
     this.streamingFallbackChunks = [];
     this.skipReasoning = false;
     this.voiceAgentRequested = false;
+    this.appContext = null;
     this.context = "dictation";
     this.sttConfig = null;
     this.lastAudioBlob = null;
@@ -1179,7 +1180,12 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
     const startTime = Date.now();
 
     try {
-      const result = await ReasoningService.processText(text, model, agentName, config);
+      const result = await ReasoningService.processText(
+        text,
+        model,
+        agentName,
+        this.appContext ? { ...(config || {}), appContext: this.appContext } : config
+      );
 
       const processingTime = Date.now() - startTime;
 

@@ -1,5 +1,15 @@
 import type { TinfoilCatalogModel } from "../models/tinfoilModels";
 
+export interface AppContext {
+  bundleId: string | null;
+  appName: string | null;
+  windowTitle: string | null;
+  fileName: string | null;
+  projectName: string | null;
+  openTabs: string[] | null;
+  projectFiles: string[] | null;
+}
+
 export type LocalTranscriptionProvider = "whisper" | "nvidia";
 
 export type InferenceMode = "openwhispr" | "providers" | "local" | "self-hosted" | "enterprise";
@@ -524,9 +534,9 @@ declare global {
       ) => Promise<void>;
       hideWindow: () => Promise<void>;
       showDictationPanel: () => Promise<void>;
-      onToggleDictation: (callback: () => void) => () => void;
+      onToggleDictation: (callback: (appContext?: AppContext | null) => void) => () => void;
       onToggleVoiceAgent?: (callback: () => void) => () => void;
-      onStartDictation?: (callback: () => void) => () => void;
+      onStartDictation?: (callback: (appContext?: AppContext | null) => void) => () => void;
       onStopDictation?: (callback: () => void) => () => void;
 
       // STT config
@@ -1200,6 +1210,7 @@ declare global {
       registerMeetingHotkey?: (hotkey: string) => Promise<{ success: boolean; message?: string }>;
       notifyFloatingIconAutoHideChanged?: (enabled: boolean) => void;
       onFloatingIconAutoHideChanged?: (callback: (enabled: boolean) => void) => () => void;
+      notifyContextAwarenessChanged?: (enabled: boolean) => void;
       notifyStartMinimizedChanged?: (enabled: boolean) => void;
       notifyPanelStartPositionChanged?: (position: string) => void;
 

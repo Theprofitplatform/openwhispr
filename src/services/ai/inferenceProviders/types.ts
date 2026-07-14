@@ -1,8 +1,9 @@
 import type { ReasoningConfig } from "../../BaseReasoningService";
+import type { AppContext } from "../../../types/electron";
 
 export interface ProviderContext {
   getApiKey(provider: string): Promise<string>;
-  getSystemPrompt(agentName: string | null): string;
+  getSystemPrompt(agentName: string | null, appContext?: AppContext | null): string;
   getCustomDictionary(): string[];
   getPreferredLanguage(): string;
   getUiLanguage(): string;

@@ -47,9 +47,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   pasteText: (text, options) => ipcRenderer.invoke("paste-text", text, options),
   hideWindow: () => ipcRenderer.invoke("hide-window"),
   showDictationPanel: () => ipcRenderer.invoke("show-dictation-panel"),
-  onToggleDictation: registerListener("toggle-dictation", (callback) => () => callback()),
+  onToggleDictation: registerListener(
+    "toggle-dictation",
+    (callback) => (_event, appContext) => callback(appContext)
+  ),
   onToggleVoiceAgent: registerListener("toggle-voice-agent", (callback) => () => callback()),
-  onStartDictation: registerListener("start-dictation", (callback) => () => callback()),
+  onStartDictation: registerListener(
+    "start-dictation",
+    (callback) => (_event, appContext) => callback(appContext)
+  ),
   onStopDictation: registerListener("stop-dictation", (callback) => () => callback()),
 
   // Database functions
@@ -732,6 +738,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
     "floating-icon-auto-hide-changed",
     (callback) => (_event, enabled) => callback(enabled)
   ),
+
+  notifyContextAwarenessChanged: (enabled) =>
+    ipcRenderer.send("context-awareness-changed", enabled),
 
   // Panel start position
   notifyPanelStartPositionChanged: (position) =>

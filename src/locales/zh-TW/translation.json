@@ -1402,6 +1402,11 @@
         "themeDescription": "選擇淺色、深色或跟隨系統",
         "title": "外觀"
       },
+      "contextAwareness": {
+        "title": "情境感知",
+        "label": "分享目前應用程式的情境",
+        "description": "將目前應用程式名稱與檔案傳送給 AI 以取得更相關的回覆"
+      },
       "floatingIcon": {
         "autoHide": "閒置時自動隱藏",
         "autoHideDescription": "在開始語音輸入前保持圖示隱藏",
