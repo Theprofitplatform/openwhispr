@@ -7087,7 +7087,7 @@ class IPCHandlers {
         const BYOK_FILE_SIZE_LIMIT = 25 * 1024 * 1024; // 25 MB
         try {
           const fileSize = fs.statSync(filePath).size;
-          if (fileSize > BYOK_FILE_SIZE_LIMIT) {
+          if (provider !== "custom" && fileSize > BYOK_FILE_SIZE_LIMIT) {
             return {
               success: false,
               error: "File too large. Maximum size for bring-your-own-key is 25 MB.",
@@ -7124,7 +7124,8 @@ class IPCHandlers {
             return { success: true, text };
           }
 
-          if (!apiKey) throw new Error("No API key configured. Add your key in Settings.");
+          if (!apiKey && provider !== "custom")
+            throw new Error("No API key configured. Add your key in Settings.");
           if (!baseUrl && provider !== "xai") {
             throw new Error("No transcription endpoint configured.");
           }
@@ -7159,9 +7160,8 @@ class IPCHandlers {
           );
 
           const url = new URL(transcriptionUrl);
-          const data = await postMultipart(url, body, boundary, {
-            Authorization: `Bearer ${apiKey}`,
-          });
+          const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
+          const data = await postMultipart(url, body, boundary, headers);
 
           if (data.statusCode === 401) {
             return { success: false, error: "Invalid API key. Check your key in Settings." };

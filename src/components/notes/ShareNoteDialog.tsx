@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Copy, Loader2, MoreHorizontal } from "lucide-react";
+import { Check, Copy, Download, Loader2, MoreHorizontal } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 import {
@@ -13,6 +13,7 @@ import { cn } from "../lib/utils";
 import ShareVisibilityMenu from "./ShareVisibilityMenu";
 import { useAuth } from "../../hooks/useAuth";
 import { NoteSharingService } from "../../services/NoteSharingService.js";
+import { buildLocalNoteSharePackage } from "../../services/LocalShareService";
 import { setShareCache, updateShareCache, useShareCacheEntry } from "../../stores/noteStore";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { emailDomain, isPersonalEmailDomain } from "../../utils/personalEmailDomains";
@@ -54,6 +55,7 @@ export default function ShareNoteDialog({ open, onOpenChange, note }: ShareNoteD
   const [emailInput, setEmailInput] = useState("");
   const [inputError, setInputError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [localBusy, setLocalBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const copyTimeoutRef = useRef<number | null>(null);
@@ -179,6 +181,39 @@ export default function ShareNoteDialog({ open, onOpenChange, note }: ShareNoteD
     }
   }, [cached?.rawToken, t]);
 
+  const handleCopyMarkdown = useCallback(async () => {
+    setLocalBusy(true);
+    try {
+      const pkg = await buildLocalNoteSharePackage(note.id);
+      await navigator.clipboard.writeText(pkg.markdown);
+      setCopied(true);
+      if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current);
+      copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 1500);
+    } catch (err) {
+      console.error("Local note copy failed:", err);
+    } finally {
+      setLocalBusy(false);
+    }
+  }, [note.id]);
+
+  const handleExportMarkdown = useCallback(async () => {
+    setLocalBusy(true);
+    try {
+      const pkg = await buildLocalNoteSharePackage(note.id);
+      const blob = new Blob([pkg.markdown], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = pkg.filename;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Local note export failed:", err);
+    } finally {
+      setLocalBusy(false);
+    }
+  }, [note.id]);
+
   const handleInvite = useCallback(async () => {
     if (!cloudId) return;
     const trimmed = emailInput.trim();
@@ -249,9 +284,43 @@ export default function ShareNoteDialog({ open, onOpenChange, note }: ShareNoteD
     }
   };
 
-  // NoteEditor only renders the dialog when cloud_id is set, so cloudId is
-  // guaranteed non-null here. We early-return for type-narrowing.
-  if (!cloudId) return null;
+  if (!cloudId) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md gap-3 p-5">
+          <DialogTitle className="text-base">{t("noteEditor.share.dialog.title")}</DialogTitle>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 px-3 text-xs gap-1.5"
+              disabled={localBusy}
+              onClick={() => void handleExportMarkdown()}
+            >
+              {localBusy ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <Download size={12} />
+              )}
+              {t("notes.editor.export")} Markdown
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 px-3 text-xs gap-1.5"
+              disabled={localBusy || copied}
+              onClick={() => void handleCopyMarkdown()}
+            >
+              {copied ? <Check size={12} /> : <Copy size={12} />}
+              {copied
+                ? t("noteEditor.share.dialog.copied")
+                : `${t("promptStudio.common.copy")} Markdown`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

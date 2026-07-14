@@ -6,6 +6,14 @@ interface SearchToolOptions {
   useCloudSearch: boolean;
 }
 
+type SearchStrategyName = "local-semantic" | "local-keyword" | "cloud";
+
+export function getSearchStrategyOrder(useCloudSearch: boolean): SearchStrategyName[] {
+  return useCloudSearch
+    ? ["local-semantic", "local-keyword", "cloud"]
+    : ["local-semantic", "local-keyword"];
+}
+
 export function createSearchNotesTool(options: SearchToolOptions): ToolDefinition {
   const { useCloudSearch } = options;
 
@@ -34,11 +42,12 @@ export function createSearchNotesTool(options: SearchToolOptions): ToolDefinitio
       const query = args.query as string;
       const limit = typeof args.limit === "number" ? args.limit : 5;
 
-      // Fallback chain: cloud → local semantic (hybrid RRF) → FTS5 keyword
-      const strategies: Array<() => Promise<ToolResult>> = [];
-      if (useCloudSearch) strategies.push(() => executeCloudSearch(query, limit));
-      strategies.push(() => executeLocalSearch(query, limit, true));
-      strategies.push(() => executeLocalSearch(query, limit, false));
+      // Fallback chain: local semantic (hybrid RRF) → FTS5 keyword → explicit cloud.
+      const strategies = getSearchStrategyOrder(useCloudSearch).map((strategy) => {
+        if (strategy === "local-semantic") return () => executeLocalSearch(query, limit, true);
+        if (strategy === "local-keyword") return () => executeLocalSearch(query, limit, false);
+        return () => executeCloudSearch(query, limit);
+      });
 
       for (let i = 0; i < strategies.length; i++) {
         try {

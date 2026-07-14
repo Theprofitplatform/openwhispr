@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useUsage } from "../hooks/useUsage";
+import { useAuth } from "../hooks/useAuth";
+import { summariseUsageDisplayMode, type UsageDisplayMode } from "../hooks/useUsageDisplayMode";
+import { resolveFeatureAvailability } from "../config/featureAvailability";
 import { useToast } from "./ui/useToast";
 import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
@@ -10,12 +13,29 @@ import { useSettingsStore } from "../stores/settingsStore";
 export default function UsageDisplay() {
   const { t } = useTranslation();
   const usage = useUsage();
+  const { isSignedIn } = useAuth();
+  const transcriptionMode = useSettingsStore((s) => s.transcriptionMode);
   const { toast } = useToast();
   const hasShownApproachingToast = useRef(false);
+  const transcriptionAvailability = resolveFeatureAvailability({
+    isSignedIn,
+    isSubscribed: Boolean(usage?.isSubscribed),
+    isTrial: Boolean(usage?.isTrial),
+    hostedUsageOverLimit: Boolean(usage?.isOverLimit),
+    modes: { transcription: transcriptionMode },
+  }).transcription;
+  const displayMode = summariseUsageDisplayMode({
+    activeRoute: transcriptionAvailability.route,
+    isOverLimit: Boolean(usage?.isOverLimit),
+  });
 
   // One-time toast when approaching limit (>80%)
   useEffect(() => {
-    if (usage?.isApproachingLimit && !hasShownApproachingToast.current) {
+    if (
+      displayMode === "hosted-ok" &&
+      usage?.isApproachingLimit &&
+      !hasShownApproachingToast.current
+    ) {
       hasShownApproachingToast.current = true;
       toast({
         title: t("usage.approachingLimit"),
@@ -26,7 +46,21 @@ export default function UsageDisplay() {
         duration: 6000,
       });
     }
-  }, [usage?.isApproachingLimit, usage?.wordsUsed, usage?.limit, toast, t]);
+  }, [displayMode, usage?.isApproachingLimit, usage?.wordsUsed, usage?.limit, toast, t]);
+
+  const activeModeStatus = getActiveModeStatus(displayMode, t);
+
+  if (activeModeStatus) {
+    return (
+      <div className="bg-card border border-border rounded-xl p-4 space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-medium text-foreground">{activeModeStatus.title}</span>
+          <Badge variant="outline">{t("common.active")}</Badge>
+        </div>
+        <p className="text-sm text-muted-foreground">{activeModeStatus.description}</p>
+      </div>
+    );
+  }
 
   if (!usage) return null;
 
@@ -71,7 +105,7 @@ export default function UsageDisplay() {
     <div className="bg-card border border-border rounded-xl p-4 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-foreground">{t("usage.weeklyUsage")}</span>
-        {usage.isOverLimit ? (
+        {displayMode === "hosted-upgrade" ? (
           <Badge variant="warning">{t("usage.limitReached")}</Badge>
         ) : (
           <Badge variant="outline">{t("usage.free")}</Badge>
@@ -95,13 +129,13 @@ export default function UsageDisplay() {
               })}
             </span>
           )}
-          {!usage.isApproachingLimit && !usage.isOverLimit && (
+          {!usage.isApproachingLimit && displayMode !== "hosted-upgrade" && (
             <span className="text-xs text-muted-foreground">{t("usage.rollingLimit")}</span>
           )}
         </div>
       </div>
 
-      {usage.isOverLimit ? (
+      {displayMode === "hosted-upgrade" ? (
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -145,4 +179,34 @@ export default function UsageDisplay() {
       )}
     </div>
   );
+}
+
+function getActiveModeStatus(
+  mode: UsageDisplayMode,
+  t: ReturnType<typeof useTranslation>["t"]
+): { title: string; description: string } | null {
+  switch (mode) {
+    case "local":
+      return {
+        title: t("settingsPage.transcription.modes.local"),
+        description: t("settingsPage.transcription.modes.localDesc"),
+      };
+    case "byok":
+      return {
+        title: t("settingsPage.transcription.modes.providers"),
+        description: t("settingsPage.transcription.modes.providersDesc"),
+      };
+    case "self-hosted":
+      return {
+        title: t("settingsPage.transcription.modes.selfHosted"),
+        description: t("settingsPage.transcription.modes.selfHostedDesc"),
+      };
+    case "enterprise":
+      return {
+        title: t("settingsPage.aiModels.modes.enterprise"),
+        description: t("settingsPage.aiModels.modes.enterpriseDesc"),
+      };
+    default:
+      return null;
+  }
 }

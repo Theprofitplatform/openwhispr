@@ -45,6 +45,7 @@ interface ControlPanelSidebarProps {
   authLoaded?: boolean;
   isProUser?: boolean;
   usageLoaded?: boolean;
+  showHostedUpgradePrompt?: boolean;
   updateAction?: React.ReactNode;
 }
 
@@ -63,6 +64,7 @@ export default function ControlPanelSidebar({
   authLoaded,
   isProUser,
   usageLoaded,
+  showHostedUpgradePrompt = true,
   updateAction,
 }: ControlPanelSidebarProps) {
   const { t } = useTranslation();
@@ -79,6 +81,7 @@ export default function ControlPanelSidebar({
     authLoaded &&
     (!isSignedIn || usageLoaded !== false) &&
     !isProUser &&
+    showHostedUpgradePrompt &&
     !upgradeDismissed;
 
   const navItems: {
