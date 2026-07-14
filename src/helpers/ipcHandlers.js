@@ -48,6 +48,11 @@ const {
   sanitizeWhisperVadConfig,
   resolveContextSileroEnabled,
 } = require("./whisperVadConfig");
+const { importYoutubeAudio } = require("./youtubeImport");
+const { createSeoYoutubeRadarStore } = require("./seoYoutubeRadar/store");
+const { createYouTubeClient } = require("./seoYoutubeRadar/youtubeClient");
+const { runSeoYoutubeRadar } = require("./seoYoutubeRadar/runner");
+const { createSeoYoutubeRadarScheduler } = require("./seoYoutubeRadar/scheduler");
 
 const STREAMING_CLIENT_BY_PROVIDER = {
   "openai-realtime": OpenAIRealtimeStreaming,
@@ -381,6 +386,17 @@ class IPCHandlers {
     this._textEditHandler = null;
     this._activeRecordingPipeline = null;
     this.audioStorageManager = new AudioStorageManager();
+    this.seoRadarStore = createSeoYoutubeRadarStore({
+      filePath: path.join(app.getPath("userData"), "seo-youtube-radar.json"),
+    });
+    this.seoRadarScheduler = createSeoYoutubeRadarScheduler({
+      store: this.seoRadarStore,
+      runNow: () => this._runSeoYoutubeRadar(),
+      onError: (error) =>
+        debugLogger.error("Scheduled SEO YouTube Radar run failed", {
+          error: error.message,
+        }),
+    });
     this._audioCleanupInterval = null;
     this._noteFilesEnabled = false;
     this.speakerDiarizationEnabled = true;
@@ -396,6 +412,10 @@ class IPCHandlers {
     this._setupAudioCleanup();
     this._logDetectedGpus();
     this.setupHandlers();
+    this.seoRadarScheduler.start();
+    app.on("before-quit", () => {
+      this.seoRadarScheduler.stop();
+    });
 
     if (this.whisperManager?.serverManager) {
       this.whisperManager.serverManager.on("cuda-fallback", () => {
@@ -764,6 +784,127 @@ class IPCHandlers {
     }
   }
 
+  async _resolveSeoRadarLocalModelId(config = {}) {
+    const configured = String(config.localModelId || "").trim();
+    if (configured) return configured;
+
+    const envModel = process.env.LOCAL_CLEANUP_MODEL || process.env.LOCAL_DICTATION_AGENT_MODEL;
+    if (envModel) return envModel;
+
+    const modelManager = require("./modelManagerBridge").default;
+    const models = await modelManager.getAllModels();
+    const downloaded = models.find((model) => model.isDownloaded);
+    if (downloaded?.id) return downloaded.id;
+
+    throw new Error(
+      "No local AI model is configured. Download/select a local AI model before running SEO Radar."
+    );
+  }
+
+  async _processSeoRadarLocalPrompt(prompt, config = {}, options = {}) {
+    const LocalReasoningService = require("../services/localReasoningBridge").default;
+    const modelId = await this._resolveSeoRadarLocalModelId(config);
+    return LocalReasoningService.processText(prompt, modelId, {
+      maxTokens: options.maxTokens || 900,
+      temperature: options.temperature ?? 0.2,
+      systemPrompt:
+        options.systemPrompt ||
+        "You are an SEO research assistant. Return only strict JSON. Do not use markdown.",
+      disableThinking: true,
+    });
+  }
+
+  async _classifySeoRadarVideo(video, prompt, config) {
+    return this._processSeoRadarLocalPrompt(prompt, config, { maxTokens: 500, temperature: 0 });
+  }
+
+  async _summarizeSeoRadarTranscript(video, transcript, config) {
+    const prompt = [
+      "Return strict JSON with keys: summary, keyTakeaways.",
+      "summary must be concise and useful for an SEO operator.",
+      "keyTakeaways must be an array of 3-7 practical SEO takeaways.",
+      "",
+      `Title: ${video.title || ""}`,
+      `Channel: ${video.channelTitle || ""}`,
+      `URL: ${video.url || ""}`,
+      "",
+      "Transcript:",
+      transcript,
+    ].join("\n");
+    return this._processSeoRadarLocalPrompt(prompt, config, { maxTokens: 1400, temperature: 0.2 });
+  }
+
+  async _transcribeSeoRadarAudio(audioPath, config) {
+    const audioBuffer = fs.readFileSync(audioPath);
+    const provider = process.env.LOCAL_TRANSCRIPTION_PROVIDER === "nvidia" ? "nvidia" : "whisper";
+    if (provider === "nvidia") {
+      return this.parakeetManager.transcribeLocalParakeet(audioBuffer, {
+        provider,
+        model: process.env.PARAKEET_MODEL || config.parakeetModel || "parakeet-tdt-0.6b-v3",
+      });
+    }
+    const vadOptions = this._resolveWhisperVadOptions("noteRecording");
+    return this.whisperManager.transcribeLocalWhisper(audioBuffer, {
+      provider,
+      model: process.env.LOCAL_WHISPER_MODEL || config.whisperModel || "base",
+      ...vadOptions,
+    });
+  }
+
+  _saveSeoRadarNote(note) {
+    const result = this.databaseManager.saveNote(
+      note.title,
+      note.content,
+      "upload",
+      note.sourceFile,
+      null,
+      null
+    );
+    if (!result?.success || !result.note) return result;
+
+    const updated = this.databaseManager.updateNote(result.note.id, {
+      enhanced_content: note.enhancedContent,
+      enhancement_prompt: "SEO YouTube Radar local AI summary",
+      enhanced_at_content_hash: crypto
+        .createHash("sha256")
+        .update(note.content || "")
+        .digest("hex"),
+    });
+    const savedNote = updated?.note || result.note;
+    setImmediate(() => {
+      this.broadcastToWindows("note-added", savedNote);
+      this.broadcastToWindows("note-updated", savedNote);
+    });
+    this._asyncVectorUpsert(savedNote);
+    this._asyncMirrorWrite(savedNote);
+    return { success: true, note: savedNote };
+  }
+
+  async _runSeoYoutubeRadar() {
+    const config = this.seoRadarStore.getConfig();
+    const apiKey = this.environmentManager.getYouTubeDataApiKey();
+    if (!apiKey) {
+      throw new Error("YouTube Data API key is required for SEO Radar discovery.");
+    }
+
+    const youtubeClient = createYouTubeClient({
+      apiKey,
+      fetchImpl: (url) => net.fetch(url, { useSessionCookies: false }),
+    });
+
+    return runSeoYoutubeRadar({
+      config,
+      store: this.seoRadarStore,
+      youtubeClient,
+      importAudio: (url) => importYoutubeAudio(url),
+      transcribeAudio: (audioPath) => this._transcribeSeoRadarAudio(audioPath, config),
+      classifyLocal: (video, prompt) => this._classifySeoRadarVideo(video, prompt, config),
+      summarizeLocal: (video, transcript) =>
+        this._summarizeSeoRadarTranscript(video, transcript, config),
+      saveNote: (note) => this._saveSeoRadarNote(note),
+    });
+  }
+
   // Mints a Corti access token from stored BYOK credentials. Shared by the
   // dictation streaming handlers and the meeting realtime-token resolver.
   async _mintStoredCortiToken(options = {}) {
@@ -857,6 +998,48 @@ class IPCHandlers {
       ipcMain.handle(`get-${k.base}-key`, () => this.environmentManager[k.get]());
       ipcMain.handle(`save-${k.base}-key`, (event, key) => this.environmentManager[k.save](key));
     }
+
+    ipcMain.handle("seo-radar-get-config", async () => {
+      return this.seoRadarStore.getConfig();
+    });
+
+    ipcMain.handle("seo-radar-set-config", async (_event, config) => {
+      try {
+        const nextConfig = this.seoRadarStore.setConfig(config);
+        this.seoRadarScheduler.reschedule();
+        return { success: true, config: nextConfig };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    });
+
+    ipcMain.handle("seo-radar-save-youtube-key", async (_event, key) => {
+      try {
+        return this.environmentManager.saveYouTubeDataApiKey(key);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    });
+
+    ipcMain.handle("seo-radar-has-youtube-key", async () => {
+      try {
+        return {
+          success: true,
+          hasKey: Boolean(this.environmentManager.getYouTubeDataApiKey()),
+        };
+      } catch (error) {
+        return { success: false, hasKey: false, error: error.message };
+      }
+    });
+
+    ipcMain.handle("seo-radar-run-now", async () => {
+      try {
+        return { success: true, result: await this.seoRadarScheduler.runNow() };
+      } catch (error) {
+        debugLogger.error("SEO YouTube Radar run failed", { error: error.message }, "seo-radar");
+        return { success: false, error: error.message };
+      }
+    });
 
     ipcMain.handle("db-save-transcription", async (event, text, rawText, options) => {
       const result = this.databaseManager.saveTranscription(text, rawText, options);
@@ -1654,6 +1837,15 @@ class IPCHandlers {
         return stats.size;
       } catch {
         return 0;
+      }
+    });
+
+    ipcMain.handle("import-youtube-audio", async (_event, url) => {
+      try {
+        return await importYoutubeAudio(url);
+      } catch (error) {
+        debugLogger.error("YouTube audio import error", { error: error.message }, "upload");
+        return { success: false, error: error.message || "YouTube import failed." };
       }
     });
 

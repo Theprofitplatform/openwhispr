@@ -1209,7 +1209,12 @@
           "annualEquivalent": "$16.67",
           "includesPrefix": "所有 Pro 功能 +",
           "badge": "最熱門",
-          "features": ["無限會議錄製", "代理模式", "與您的資料對話", "優先支援"],
+          "features": [
+            "無限會議錄製",
+            "代理模式",
+            "與您的資料對話",
+            "優先支援"
+          ],
           "cta": "開始使用",
           "switchToAnnual": "切換為年付"
         },
@@ -1865,6 +1870,29 @@
         "keyCreatedTitle": "Clave API creada",
         "keyCreatedDescription": "Copia esta clave ahora — no podrás verla de nuevo."
       }
+    },
+    "seoRadar": {
+      "title": "SEO YouTube Radar",
+      "description": "Find newly popular SEO videos, transcribe them, and summarize them with local AI.",
+      "enabled": "Run daily",
+      "enabledDescription": "Automatically checks YouTube once per day using cached video IDs.",
+      "apiKey": "YouTube API key",
+      "apiKeySaved": "YouTube API key saved",
+      "apiKeyPlaceholder": "Paste a YouTube Data API key",
+      "save": "Save",
+      "keywords": "Search topics",
+      "keywordsPlaceholder": "seo, technical seo, google algorithm update",
+      "maxVideos": "Max videos per run",
+      "lookbackHours": "Lookback hours",
+      "runHour": "Run hour",
+      "runNow": "Run now",
+      "running": "Running",
+      "lastRun": "Last run",
+      "noRunYet": "No runs yet",
+      "saved": "SEO Radar settings saved",
+      "failed": "SEO Radar failed",
+      "alreadyRunning": "SEO Radar is already running",
+      "lastRunSummary": "{{processed}} processed, {{rejected}} rejected, {{skipped}} skipped"
     }
   },
   "models": {
@@ -2160,7 +2188,13 @@
       "switchToCloudForLargeFiles": "切換到 OpenWhispr Cloud 來轉錄此檔案。",
       "createAccount": "建立帳戶",
       "upgrade": "升級",
-      "switchToCloud": "OpenWhispr Cloud"
+      "switchToCloud": "OpenWhispr Cloud",
+      "youtubeUrlLabel": "YouTube 連結",
+      "youtubeUrlPlaceholder": "貼上 YouTube 連結",
+      "youtubeImport": "匯入",
+      "youtubeImporting": "匯入中",
+      "youtubeImportUnavailable": "YouTube 匯入無法使用。請重新啟動 OpenWhispr 後再試。",
+      "youtubeImportFailed": "無法匯入 YouTube 音訊。"
     },
     "meeting": {
       "title": "會議筆記",

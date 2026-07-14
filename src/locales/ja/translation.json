@@ -1870,6 +1870,29 @@
         "keyCreatedTitle": "Clave API creada",
         "keyCreatedDescription": "Copia esta clave ahora — no podrás verla de nuevo."
       }
+    },
+    "seoRadar": {
+      "title": "SEO YouTube Radar",
+      "description": "Find newly popular SEO videos, transcribe them, and summarize them with local AI.",
+      "enabled": "Run daily",
+      "enabledDescription": "Automatically checks YouTube once per day using cached video IDs.",
+      "apiKey": "YouTube API key",
+      "apiKeySaved": "YouTube API key saved",
+      "apiKeyPlaceholder": "Paste a YouTube Data API key",
+      "save": "Save",
+      "keywords": "Search topics",
+      "keywordsPlaceholder": "seo, technical seo, google algorithm update",
+      "maxVideos": "Max videos per run",
+      "lookbackHours": "Lookback hours",
+      "runHour": "Run hour",
+      "runNow": "Run now",
+      "running": "Running",
+      "lastRun": "Last run",
+      "noRunYet": "No runs yet",
+      "saved": "SEO Radar settings saved",
+      "failed": "SEO Radar failed",
+      "alreadyRunning": "SEO Radar is already running",
+      "lastRunSummary": "{{processed}} processed, {{rejected}} rejected, {{skipped}} skipped"
     }
   },
   "models": {
@@ -2148,7 +2171,13 @@
       "switchToCloudForLargeFiles": "このファイルを文字起こしするには OpenWhispr Cloud に切り替えてください。",
       "createAccount": "アカウント作成",
       "upgrade": "アップグレード",
-      "switchToCloud": "OpenWhispr Cloud"
+      "switchToCloud": "OpenWhispr Cloud",
+      "youtubeUrlLabel": "YouTube リンク",
+      "youtubeUrlPlaceholder": "YouTube リンクを貼り付け",
+      "youtubeImport": "インポート",
+      "youtubeImporting": "インポート中",
+      "youtubeImportUnavailable": "YouTube インポートは利用できません。OpenWhispr を再起動してもう一度お試しください。",
+      "youtubeImportFailed": "YouTube 音声をインポートできませんでした。"
     },
     "meeting": {
       "title": "議事録",

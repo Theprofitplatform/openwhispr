@@ -155,9 +155,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Audio file operations
   selectAudioFile: () => ipcRenderer.invoke("select-audio-file"),
   getFileSize: (filePath) => ipcRenderer.invoke("get-file-size", filePath),
+  importYoutubeAudio: (url) => ipcRenderer.invoke("import-youtube-audio", url),
   transcribeAudioFile: (filePath, options) =>
     ipcRenderer.invoke("transcribe-audio-file", filePath, options),
   getPathForFile: (file) => webUtils.getPathForFile(file),
+
+  // SEO YouTube Radar
+  seoRadarGetConfig: () => ipcRenderer.invoke("seo-radar-get-config"),
+  seoRadarSetConfig: (config) => ipcRenderer.invoke("seo-radar-set-config", config),
+  seoRadarSaveYouTubeKey: (key) => ipcRenderer.invoke("seo-radar-save-youtube-key", key),
+  seoRadarHasYouTubeKey: () => ipcRenderer.invoke("seo-radar-has-youtube-key"),
+  seoRadarRunNow: () => ipcRenderer.invoke("seo-radar-run-now"),
 
   onNoteAdded: (callback) => {
     const listener = (_event, note) => callback?.(note);

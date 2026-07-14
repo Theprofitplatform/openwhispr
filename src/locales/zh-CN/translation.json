@@ -1209,7 +1209,12 @@
           "annualEquivalent": "$16.67",
           "includesPrefix": "所有 Pro 功能 +",
           "badge": "最受欢迎",
-          "features": ["无限会议录制", "代理模式", "与您的数据对话", "优先支持"],
+          "features": [
+            "无限会议录制",
+            "代理模式",
+            "与您的数据对话",
+            "优先支持"
+          ],
           "cta": "开始使用",
           "switchToAnnual": "切换为年付"
         },
@@ -1865,6 +1870,29 @@
         "keyCreatedTitle": "Clave API creada",
         "keyCreatedDescription": "Copia esta clave ahora — no podrás verla de nuevo."
       }
+    },
+    "seoRadar": {
+      "title": "SEO YouTube Radar",
+      "description": "Find newly popular SEO videos, transcribe them, and summarize them with local AI.",
+      "enabled": "Run daily",
+      "enabledDescription": "Automatically checks YouTube once per day using cached video IDs.",
+      "apiKey": "YouTube API key",
+      "apiKeySaved": "YouTube API key saved",
+      "apiKeyPlaceholder": "Paste a YouTube Data API key",
+      "save": "Save",
+      "keywords": "Search topics",
+      "keywordsPlaceholder": "seo, technical seo, google algorithm update",
+      "maxVideos": "Max videos per run",
+      "lookbackHours": "Lookback hours",
+      "runHour": "Run hour",
+      "runNow": "Run now",
+      "running": "Running",
+      "lastRun": "Last run",
+      "noRunYet": "No runs yet",
+      "saved": "SEO Radar settings saved",
+      "failed": "SEO Radar failed",
+      "alreadyRunning": "SEO Radar is already running",
+      "lastRunSummary": "{{processed}} processed, {{rejected}} rejected, {{skipped}} skipped"
     }
   },
   "models": {
@@ -2160,7 +2188,13 @@
       "switchToCloudForLargeFiles": "切换到 OpenWhispr Cloud 来转录此文件。",
       "createAccount": "创建账户",
       "upgrade": "升级",
-      "switchToCloud": "OpenWhispr Cloud"
+      "switchToCloud": "OpenWhispr Cloud",
+      "youtubeUrlLabel": "YouTube 链接",
+      "youtubeUrlPlaceholder": "粘贴 YouTube 链接",
+      "youtubeImport": "导入",
+      "youtubeImporting": "导入中",
+      "youtubeImportUnavailable": "YouTube 导入不可用。请重启 OpenWhispr 后重试。",
+      "youtubeImportFailed": "无法导入 YouTube 音频。"
     },
     "meeting": {
       "title": "会议笔记",

@@ -1,6 +1,16 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Upload, FileAudio, X, AlertCircle, FolderOpen, Plus, Settings } from "lucide-react";
+import {
+  Upload,
+  FileAudio,
+  X,
+  AlertCircle,
+  FolderOpen,
+  Plus,
+  Settings,
+  Link as LinkIcon,
+  Loader2,
+} from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { Button } from "../ui/button";
 import { cn } from "../lib/utils";
@@ -25,11 +35,21 @@ import { getAllReasoningModels, getBatchTranscriptionModel } from "../../models/
 import {
   useSettingsStore,
   selectIsCloudCleanupMode,
+  selectIsCloudNoteFormattingMode,
   selectResolvedUploadTranscription,
+  selectResolvedLLMConfig,
   getSettings,
 } from "../../stores/settingsStore";
 import { generateNoteTitle } from "../../utils/generateTitle";
 import { getBaseLanguageCode } from "../../utils/languageSupport";
+import reasoningService from "../../services/ReasoningService";
+import logger from "../../utils/logger";
+import {
+  buildUploadEnhancedContent,
+  makeUploadContentHash,
+  resolveUploadSummaryReasoning,
+  UPLOAD_SUMMARY_SYSTEM_PROMPT,
+} from "../../utils/uploadTranscriptSummary";
 
 type UploadState = "idle" | "selected" | "transcribing" | "complete" | "error";
 
@@ -64,6 +84,8 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
   const [noteId, setNoteId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [isImportingYoutube, setIsImportingYoutube] = useState(false);
   const [progress, setProgress] = useState(0);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [chunkProgress, setChunkProgress] = useState<{
@@ -103,6 +125,10 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
     cloudTranscriptionBaseUrl,
     cloudTranscriptionMode,
   } = useSettingsStore(useShallow(selectResolvedUploadTranscription));
+  const noteFormatting = useSettingsStore(
+    useShallow((s) => selectResolvedLLMConfig(s, "noteFormatting"))
+  );
+  const isCloudNoteFormatting = useSettingsStore(selectIsCloudNoteFormattingMode);
 
   const setUploadTranscriptionMode = useSettingsStore((s) => s.setUploadTranscriptionMode);
   const setUploadCloudTranscriptionMode = useSettingsStore(
@@ -276,19 +302,79 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
     return generateNoteTitle(text, model);
   };
 
+  const generateSummaryContent = async (text: string): Promise<string | null> => {
+    const summaryRequest = resolveUploadSummaryReasoning({
+      ...noteFormatting,
+      mode:
+        noteFormatting.mode === "openwhispr" && !isCloudNoteFormatting
+          ? "providers"
+          : noteFormatting.mode,
+    });
+    if (!summaryRequest) return null;
+
+    try {
+      const summary = await reasoningService.processText(text, summaryRequest.modelId, null, {
+        ...summaryRequest.config,
+        systemPrompt: UPLOAD_SUMMARY_SYSTEM_PROMPT,
+        temperature: 0.2,
+      });
+      const trimmedSummary = summary.trim();
+      if (!trimmedSummary) return null;
+      return buildUploadEnhancedContent({ summary: trimmedSummary, transcript: text });
+    } catch (err) {
+      logger.warn(
+        "Failed to summarize uploaded transcript",
+        { error: err instanceof Error ? err.message : String(err) },
+        "notes"
+      );
+      return null;
+    }
+  };
+
+  const selectAudioPath = async (filePath: string) => {
+    const name = filePath.split(/[/\\]/).pop() || "audio";
+    const sizeBytes = (await window.electronAPI.getFileSize?.(filePath)) ?? 0;
+    setFile({
+      name,
+      path: filePath,
+      size: sizeBytes ? formatFileSize(sizeBytes) : "",
+      sizeBytes,
+    });
+    setState("selected");
+    setError(null);
+  };
+
   const handleBrowse = async () => {
     const res = await window.electronAPI.selectAudioFile();
     if (!res.canceled && res.filePath) {
-      const name = res.filePath.split(/[/\\]/).pop() || "audio";
-      const sizeBytes = (await window.electronAPI.getFileSize?.(res.filePath)) ?? 0;
-      setFile({
-        name,
-        path: res.filePath,
-        size: sizeBytes ? formatFileSize(sizeBytes) : "",
-        sizeBytes,
-      });
-      setState("selected");
-      setError(null);
+      await selectAudioPath(res.filePath);
+    }
+  };
+
+  const handleYoutubeImport = async () => {
+    const url = youtubeUrl.trim();
+    if (!url || isImportingYoutube) return;
+
+    if (!window.electronAPI.importYoutubeAudio) {
+      setError(t("notes.upload.youtubeImportUnavailable"));
+      setState("error");
+      return;
+    }
+
+    setIsImportingYoutube(true);
+    setError(null);
+    try {
+      const res = await window.electronAPI.importYoutubeAudio(url);
+      if (!res.success || !res.audioPath) {
+        throw new Error(res.error || t("notes.upload.youtubeImportFailed"));
+      }
+      await selectAudioPath(res.audioPath);
+      setYoutubeUrl("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("notes.upload.youtubeImportFailed"));
+      setState("error");
+    } finally {
+      setIsImportingYoutube(false);
     }
   };
 
@@ -421,7 +507,26 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
           null,
           folderId
         );
-        if (noteRes.success && noteRes.note) setNoteId(noteRes.note.id);
+        if (noteRes.success && noteRes.note) {
+          const summaryContent = await generateSummaryContent(res.text);
+          if (runId !== runIdRef.current) return;
+          if (summaryContent) {
+            try {
+              await window.electronAPI.updateNote(noteRes.note.id, {
+                enhanced_content: summaryContent,
+                enhancement_prompt: UPLOAD_SUMMARY_SYSTEM_PROMPT,
+                enhanced_at_content_hash: makeUploadContentHash(res.text),
+              });
+            } catch (err) {
+              logger.warn(
+                "Failed to save uploaded transcript summary",
+                { error: err instanceof Error ? err.message : String(err) },
+                "notes"
+              );
+            }
+          }
+          setNoteId(noteRes.note.id);
+        }
         setState("complete");
       } else {
         setProgress(0);
@@ -501,6 +606,10 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
               getActiveModelLabel={getActiveModelLabel}
               handleDrop={handleDrop}
               handleBrowse={handleBrowse}
+              youtubeUrl={youtubeUrl}
+              setYoutubeUrl={setYoutubeUrl}
+              handleYoutubeImport={handleYoutubeImport}
+              isImportingYoutube={isImportingYoutube}
               isDragOver={isDragOver}
               setIsDragOver={setIsDragOver}
             />
@@ -634,6 +743,10 @@ interface IdleViewProps {
   getActiveModelLabel: () => string;
   handleDrop: (e: React.DragEvent) => void;
   handleBrowse: () => void;
+  youtubeUrl: string;
+  setYoutubeUrl: (v: string) => void;
+  handleYoutubeImport: () => void;
+  isImportingYoutube: boolean;
   isDragOver: boolean;
   setIsDragOver: (v: boolean) => void;
 }
@@ -643,6 +756,10 @@ function IdleView({
   getActiveModelLabel,
   handleDrop,
   handleBrowse,
+  youtubeUrl,
+  setYoutubeUrl,
+  handleYoutubeImport,
+  isImportingYoutube,
   isDragOver,
   setIsDragOver,
 }: IdleViewProps) {
@@ -745,6 +862,44 @@ function IdleView({
           </div>
         )}
       </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleYoutubeImport();
+        }}
+        className="mt-3 flex items-center gap-2"
+      >
+        <div className="relative min-w-0 flex-1">
+          <LinkIcon
+            size={13}
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground/20"
+          />
+          <Input
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            disabled={isImportingYoutube}
+            placeholder={t("notes.upload.youtubeUrlPlaceholder")}
+            aria-label={t("notes.upload.youtubeUrlLabel")}
+            className="h-8 pl-8 pr-2 text-xs bg-surface-1/40 dark:bg-white/[0.03] border-foreground/6 dark:border-white/6"
+          />
+        </div>
+        <Button
+          type="submit"
+          size="sm"
+          disabled={isImportingYoutube || !youtubeUrl.trim()}
+          className="h-8 min-w-[78px] gap-1.5 px-3 text-xs"
+        >
+          {isImportingYoutube ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            <LinkIcon size={12} />
+          )}
+          {isImportingYoutube
+            ? t("notes.upload.youtubeImporting")
+            : t("notes.upload.youtubeImport")}
+        </Button>
+      </form>
     </>
   );
 }
