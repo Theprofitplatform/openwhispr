@@ -2275,7 +2275,12 @@
       "youtubeImport": "Importar",
       "youtubeImporting": "Importando",
       "youtubeImportUnavailable": "La importación de YouTube no está disponible. Reinicia OpenWhispr e inténtalo de nuevo.",
-      "youtubeImportFailed": "No se pudo importar el audio de YouTube."
+      "youtubeImportFailed": "No se pudo importar el audio de YouTube.",
+      "cancelRestartTitle": "¿Reiniciar el servidor del modelo local?",
+      "cancelRestartBody": "Cancelar una transcripción local reinicia el servidor del modelo. Esto tarda unos segundos.",
+      "cancelRestartProceed": "Continuar",
+      "keepTranscribing": "Seguir transcribiendo",
+      "restartingServer": "Reiniciando el servidor del modelo local…"
     },
     "meeting": {
       "title": "Notas de reunión",

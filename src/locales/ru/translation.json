@@ -2227,7 +2227,12 @@
       "youtubeImport": "Импорт",
       "youtubeImporting": "Импорт",
       "youtubeImportUnavailable": "Импорт YouTube недоступен. Перезапустите OpenWhispr и попробуйте снова.",
-      "youtubeImportFailed": "Не удалось импортировать аудио YouTube."
+      "youtubeImportFailed": "Не удалось импортировать аудио YouTube.",
+      "cancelRestartTitle": "Перезапустить локальный сервер модели?",
+      "cancelRestartBody": "Отмена локальной транскрипции перезапускает сервер модели. Это займёт несколько секунд.",
+      "cancelRestartProceed": "Продолжить",
+      "keepTranscribing": "Продолжить транскрипцию",
+      "restartingServer": "Перезапуск локального сервера модели…"
     },
     "meeting": {
       "title": "Заметки со встреч",

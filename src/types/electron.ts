@@ -733,9 +733,10 @@ declare global {
           provider?: "whisper" | "nvidia";
           model?: string;
           language?: string;
+          requestId?: string;
           [key: string]: unknown;
         }
-      ) => Promise<{ success: boolean; text?: string; error?: string }>;
+      ) => Promise<{ success: boolean; text?: string; error?: string; code?: string }>;
       getPathForFile: (file: File) => string;
 
       // SEO YouTube Radar
@@ -1339,13 +1340,20 @@ declare global {
       }>;
 
       // Cloud audio file transcription
-      transcribeAudioFileCloud?: (filePath: string) => Promise<{
+      transcribeAudioFileCloud?: (
+        filePath: string,
+        options?: { requestId?: string }
+      ) => Promise<{
         success: boolean;
         text?: string;
         warning?: string;
         error?: string;
         code?: string;
       }>;
+
+      cancelUploadTranscription?: (
+        requestId: string
+      ) => Promise<{ success: boolean; restarted?: boolean }>;
 
       onUploadTranscriptionProgress?: (
         callback: (data: { stage: string; chunksTotal: number; chunksCompleted: number }) => void
@@ -1361,10 +1369,12 @@ declare global {
         language?: string;
         environment?: string;
         tenant?: string;
+        requestId?: string;
       }) => Promise<{
         success: boolean;
         text?: string;
         error?: string;
+        code?: string;
       }>;
 
       // Usage limit events

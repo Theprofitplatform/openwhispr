@@ -5,9 +5,12 @@ type TranscriptionResult = { success: boolean; text?: string; error?: string; co
 export interface UploadTranscriptionApi {
   transcribeAudioFile: (
     filePath: string,
-    options: { provider: "whisper" | "nvidia"; model: string }
+    options: { provider: "whisper" | "nvidia"; model: string; requestId?: string }
   ) => Promise<TranscriptionResult>;
-  transcribeAudioFileCloud?: (filePath: string) => Promise<TranscriptionResult>;
+  transcribeAudioFileCloud?: (
+    filePath: string,
+    options?: { requestId?: string }
+  ) => Promise<TranscriptionResult>;
   transcribeAudioFileByok?: (options: {
     filePath: string;
     apiKey: string;
@@ -17,6 +20,7 @@ export interface UploadTranscriptionApi {
     language: string;
     environment: string;
     tenant: string;
+    requestId?: string;
   }) => Promise<TranscriptionResult>;
 }
 
@@ -34,6 +38,7 @@ export interface UploadTranscriptionRequest {
   language: string;
   environment: string;
   tenant: string;
+  requestId?: string;
 }
 
 type SessionRefresh = <T>(fn: () => Promise<T>) => Promise<T>;
@@ -50,6 +55,7 @@ export async function transcribeUploadedAudioFile(
         request.localTranscriptionProvider === "nvidia"
           ? request.parakeetModel
           : request.whisperModel,
+      requestId: request.requestId,
     });
   }
 
@@ -58,7 +64,9 @@ export async function transcribeUploadedAudioFile(
       return { success: false, error: "Hosted transcription is not available." };
     }
     return withHostedSessionRefresh(async () => {
-      const result = await api.transcribeAudioFileCloud!(request.filePath);
+      const result = await api.transcribeAudioFileCloud!(request.filePath, {
+        requestId: request.requestId,
+      });
       if (!result.success && result.code) {
         throw Object.assign(new Error(result.error || "Cloud transcription failed"), {
           code: result.code,
@@ -81,5 +89,6 @@ export async function transcribeUploadedAudioFile(
     language: request.language,
     environment: request.environment,
     tenant: request.tenant,
+    requestId: request.requestId,
   });
 }

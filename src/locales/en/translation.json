@@ -2428,7 +2428,12 @@
       "youtubeImport": "Import",
       "youtubeImporting": "Importing",
       "youtubeImportUnavailable": "YouTube import is not available. Restart OpenWhispr and try again.",
-      "youtubeImportFailed": "Could not import the YouTube audio."
+      "youtubeImportFailed": "Could not import the YouTube audio.",
+      "cancelRestartTitle": "Restart local model server?",
+      "cancelRestartBody": "Cancelling a local transcription restarts your model server. This takes a few seconds.",
+      "cancelRestartProceed": "Proceed",
+      "keepTranscribing": "Keep transcribing",
+      "restartingServer": "Restarting local model server…"
     },
     "meeting": {
       "title": "Meeting Notes",

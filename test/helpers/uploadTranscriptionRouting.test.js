@@ -42,6 +42,7 @@ test("upload route calls local transcription IPC for local mode", async () => {
     language: "en",
     environment: "",
     tenant: "",
+    requestId: "req-local",
   });
 
   assert.equal(result.text, "local transcript");
@@ -49,7 +50,7 @@ test("upload route calls local transcription IPC for local mode", async () => {
     [
       "local",
       "/tmp/audio.wav",
-      { provider: "nvidia", model: "parakeet-tdt-0.6b-v3" },
+      { provider: "nvidia", model: "parakeet-tdt-0.6b-v3", requestId: "req-local" },
     ],
   ]);
 });
@@ -74,6 +75,7 @@ test("upload route calls BYOK IPC for provider and self-hosted modes", async () 
     language: "en",
     environment: "",
     tenant: "",
+    requestId: "req-byok",
   });
 
   assert.equal(result.text, "byok transcript");
@@ -87,6 +89,7 @@ test("upload route calls BYOK IPC for provider and self-hosted modes", async () 
     language: "en",
     environment: "",
     tenant: "",
+    requestId: "req-byok",
   });
 });
 
@@ -113,6 +116,7 @@ test("upload route calls hosted cloud IPC through the session wrapper", async ()
       language: "en",
       environment: "",
       tenant: "",
+      requestId: "req-cloud",
     },
     async (fn) => {
       wrapped = true;
@@ -122,5 +126,5 @@ test("upload route calls hosted cloud IPC through the session wrapper", async ()
 
   assert.equal(result.text, "hosted transcript");
   assert.equal(wrapped, true);
-  assert.deepEqual(calls, [["hosted", "/tmp/audio.wav"]]);
+  assert.deepEqual(calls, [["hosted", "/tmp/audio.wav", { requestId: "req-cloud" }]]);
 });

@@ -2227,7 +2227,12 @@
       "youtubeImport": "匯入",
       "youtubeImporting": "匯入中",
       "youtubeImportUnavailable": "YouTube 匯入無法使用。請重新啟動 OpenWhispr 後再試。",
-      "youtubeImportFailed": "無法匯入 YouTube 音訊。"
+      "youtubeImportFailed": "無法匯入 YouTube 音訊。",
+      "cancelRestartTitle": "重新啟動本機模型伺服器？",
+      "cancelRestartBody": "取消本機轉錄會重新啟動模型伺服器，這需要幾秒鐘。",
+      "cancelRestartProceed": "繼續",
+      "keepTranscribing": "繼續轉錄",
+      "restartingServer": "正在重新啟動本機模型伺服器…"
     },
     "meeting": {
       "title": "會議筆記",

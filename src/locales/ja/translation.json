@@ -2210,7 +2210,12 @@
       "youtubeImport": "インポート",
       "youtubeImporting": "インポート中",
       "youtubeImportUnavailable": "YouTube インポートは利用できません。OpenWhispr を再起動してもう一度お試しください。",
-      "youtubeImportFailed": "YouTube 音声をインポートできませんでした。"
+      "youtubeImportFailed": "YouTube 音声をインポートできませんでした。",
+      "cancelRestartTitle": "ローカルモデルサーバーを再起動しますか？",
+      "cancelRestartBody": "ローカル文字起こしをキャンセルするとモデルサーバーが再起動します。数秒かかります。",
+      "cancelRestartProceed": "続行",
+      "keepTranscribing": "文字起こしを続ける",
+      "restartingServer": "ローカルモデルサーバーを再起動しています…"
     },
     "meeting": {
       "title": "議事録",

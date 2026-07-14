@@ -2227,7 +2227,12 @@
       "youtubeImport": "导入",
       "youtubeImporting": "导入中",
       "youtubeImportUnavailable": "YouTube 导入不可用。请重启 OpenWhispr 后重试。",
-      "youtubeImportFailed": "无法导入 YouTube 音频。"
+      "youtubeImportFailed": "无法导入 YouTube 音频。",
+      "cancelRestartTitle": "重启本地模型服务器？",
+      "cancelRestartBody": "取消本地转录会重启模型服务器，这需要几秒钟。",
+      "cancelRestartProceed": "继续",
+      "keepTranscribing": "继续转录",
+      "restartingServer": "正在重启本地模型服务器…"
     },
     "meeting": {
       "title": "会议笔记",
