@@ -558,7 +558,8 @@
         "sessionExpired": "Session expirée",
         "offline": "Vous êtes hors ligne",
         "dailyLimitReached": "Limite quotidienne atteinte",
-        "providerRateLimited": "Limite de débit du fournisseur"
+        "providerRateLimited": "Limite de débit du fournisseur",
+        "cpuUnsupported": "Whisper local non pris en charge"
       },
       "fallback": {
         "title": "Mode de secours",
@@ -576,7 +577,8 @@
         "sessionExpired": "Votre session OpenWhispr Cloud est indisponible. Reconnectez-vous depuis Paramètres.",
         "offline": "Vous êtes hors ligne. La transcription cloud nécessite une connexion Internet.",
         "dailyLimitReached": "Vous avez atteint votre limite de transcription du jour. Réessayez demain ou améliorez votre forfait.",
-        "providerRateLimited": "Votre fournisseur de transcription a limité la requête. Patientez un instant et réessayez."
+        "providerRateLimited": "Votre fournisseur de transcription a limité la requête. Patientez un instant et réessayez.",
+        "cpuUnsupported": "Le processeur de votre ordinateur ne peut pas exécuter Whisper local. Utilisez plutôt un fournisseur cloud ou NVIDIA Parakeet."
       }
     },
     "clipboard": {

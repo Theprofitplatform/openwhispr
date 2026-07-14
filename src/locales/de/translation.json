@@ -558,7 +558,8 @@
         "sessionExpired": "Sitzung abgelaufen",
         "offline": "Sie sind offline",
         "dailyLimitReached": "Tägliches Limit erreicht",
-        "providerRateLimited": "Anbieter-Ratenlimit erreicht"
+        "providerRateLimited": "Anbieter-Ratenlimit erreicht",
+        "cpuUnsupported": "Lokales Whisper nicht unterstützt"
       },
       "fallback": {
         "title": "Fallback-Modus",
@@ -576,7 +577,8 @@
         "sessionExpired": "Deine OpenWhispr-Cloud-Sitzung ist nicht verfügbar. Bitte melde dich erneut über die Einstellungen an.",
         "offline": "Du bist offline. Die Cloud-Transkription benötigt eine Internetverbindung.",
         "dailyLimitReached": "Du hast dein heutiges Transkriptionslimit erreicht. Versuch es morgen erneut oder upgrade deinen Plan.",
-        "providerRateLimited": "Dein Transkriptionsanbieter hat die Anfrage begrenzt. Warte kurz und versuch es erneut."
+        "providerRateLimited": "Dein Transkriptionsanbieter hat die Anfrage begrenzt. Warte kurz und versuch es erneut.",
+        "cpuUnsupported": "Der Prozessor deines Computers kann lokales Whisper nicht ausführen. Nutze stattdessen einen Cloud-Anbieter oder NVIDIA Parakeet."
       }
     },
     "clipboard": {

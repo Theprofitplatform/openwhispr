@@ -558,7 +558,8 @@
         "sessionExpired": "Sessione scaduta",
         "offline": "Sei offline",
         "dailyLimitReached": "Limite giornaliero raggiunto",
-        "providerRateLimited": "Limite di velocità del provider"
+        "providerRateLimited": "Limite di velocità del provider",
+        "cpuUnsupported": "Whisper locale non supportato"
       },
       "fallback": {
         "title": "Modalità fallback",
@@ -576,7 +577,8 @@
         "sessionExpired": "La tua sessione OpenWhispr Cloud non è disponibile. Effettua di nuovo l'accesso dalle Impostazioni.",
         "offline": "Sei offline. La trascrizione cloud richiede una connessione Internet.",
         "dailyLimitReached": "Hai raggiunto il limite di trascrizioni di oggi. Riprova domani o aggiorna il tuo piano.",
-        "providerRateLimited": "Il tuo provider di trascrizione ha limitato la richiesta. Attendi un momento e riprova."
+        "providerRateLimited": "Il tuo provider di trascrizione ha limitato la richiesta. Attendi un momento e riprova.",
+        "cpuUnsupported": "Il processore del tuo computer non può eseguire Whisper locale. Usa un provider cloud o NVIDIA Parakeet."
       }
     },
     "clipboard": {
