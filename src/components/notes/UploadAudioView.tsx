@@ -31,7 +31,7 @@ import { useUsage } from "../../hooks/useUsage";
 import { useSettings } from "../../hooks/useSettings";
 import { useStartOnboarding } from "../../hooks/useStartOnboarding";
 import { withSessionRefresh } from "../../lib/auth";
-import { getAllReasoningModels } from "../../models/ModelRegistry";
+import { getAllReasoningModels, getBatchTranscriptionModel } from "../../models/ModelRegistry";
 import {
   useSettingsStore,
   selectIsCloudCleanupMode,
@@ -80,6 +80,7 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
     sizeBytes: number;
   } | null>(null);
   const [result, setResult] = useState<string | null>(null);
+  const [partialWarning, setPartialWarning] = useState(false);
   const [noteId, setNoteId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -105,8 +106,14 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
   const usage = useUsage();
   const isProUser = usage?.isSubscribed || usage?.isTrial;
 
-  const { openaiApiKey, groqApiKey, xaiApiKey, mistralApiKey, customTranscriptionApiKey } =
-    useSettings();
+  const {
+    openaiApiKey,
+    groqApiKey,
+    xaiApiKey,
+    mistralApiKey,
+    tinfoilApiKey,
+    customTranscriptionApiKey,
+  } = useSettings();
 
   const {
     useLocalWhisper,
@@ -212,7 +219,9 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
                   ? xaiApiKey
                   : cloudTranscriptionProvider === "mistral"
                     ? mistralApiKey
-                    : customTranscriptionApiKey;
+                    : cloudTranscriptionProvider === "tinfoil"
+                      ? tinfoilApiKey
+                      : customTranscriptionApiKey;
           if (!cancelled) setProviderReady(!!key);
         }
         return;
@@ -245,6 +254,7 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
     groqApiKey,
     xaiApiKey,
     mistralApiKey,
+    tinfoilApiKey,
     customTranscriptionApiKey,
     cortiClientId,
     cortiClientSecret,
@@ -261,7 +271,8 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
       cloudTranscriptionProvider === "custom"
         ? t("notes.upload.custom")
         : cloudTranscriptionProvider.charAt(0).toUpperCase() + cloudTranscriptionProvider.slice(1);
-    return `${name} · ${cloudTranscriptionModel}`;
+    const model = getBatchTranscriptionModel(cloudTranscriptionProvider) ?? cloudTranscriptionModel;
+    return `${name} · ${model}`;
   };
 
   const getActiveApiKey = (): string => {
@@ -274,6 +285,8 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
         return xaiApiKey;
       case "mistral":
         return mistralApiKey;
+      case "tinfoil":
+        return tinfoilApiKey;
       case "custom":
         return customTranscriptionApiKey || "";
       default:
@@ -387,6 +400,7 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
     setState("idle");
     setFile(null);
     setResult(null);
+    setPartialWarning(false);
     setNoteId(null);
     setError(null);
     setProgress(0);
@@ -434,7 +448,7 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
     }
 
     try {
-      let res: { success: boolean; text?: string; error?: string; code?: string };
+      let res: { success: boolean; text?: string; error?: string; code?: string; warning?: string };
 
       if (isOpenWhisprCloud) {
         res = await withSessionRefresh(async () => {
@@ -473,6 +487,7 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
       if (res.success && res.text) {
         setProgress(100);
         setResult(res.text);
+        setPartialWarning(!!res.warning);
 
         const textFallback = res.text.trim().split(/\s+/).slice(0, 6).join(" ");
         const fallbackTitle =
@@ -635,6 +650,7 @@ export default function UploadAudioView({ onNoteCreated, onOpenSettings }: Uploa
             <CompleteView
               t={t}
               result={result}
+              partialWarning={partialWarning}
               folders={folders}
               selectedFolderId={selectedFolderId}
               handleFolderChange={handleFolderChange}
@@ -1124,6 +1140,7 @@ function TranscribingView({
 interface CompleteViewProps {
   t: (key: string) => string;
   result: string;
+  partialWarning: boolean;
   folders: FolderItem[];
   selectedFolderId: string;
   handleFolderChange: (val: string) => void;
@@ -1135,6 +1152,7 @@ interface CompleteViewProps {
 function CompleteView({
   t,
   result,
+  partialWarning,
   folders,
   selectedFolderId,
   handleFolderChange,
@@ -1188,6 +1206,12 @@ function CompleteView({
       <p className="text-xs text-foreground/25 max-w-[240px] text-center line-clamp-2 mb-4">
         {result.slice(0, 150)}
       </p>
+
+      {partialWarning && (
+        <p className="text-xs text-destructive/50 max-w-[240px] text-center mb-4 -mt-2">
+          {t("notes.upload.partialWarning")}
+        </p>
+      )}
 
       {folders.length > 0 && (
         <div className="flex items-center justify-center gap-2 mb-4">
